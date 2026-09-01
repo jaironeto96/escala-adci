@@ -10,33 +10,97 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedCultosRouteImport } from './routes/_authenticated/cultos'
+import { Route as AuthenticatedDepartamentosRouteImport } from './routes/_authenticated/departamentos'
+import { Route as AuthenticatedEscalaRouteImport } from './routes/_authenticated/escala'
+import { Route as AuthenticatedVoluntariosRouteImport } from './routes/_authenticated/voluntarios'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCultosRoute = AuthenticatedCultosRouteImport.update({
+  id: '/cultos',
+  path: '/cultos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDepartamentosRoute =
+  AuthenticatedDepartamentosRouteImport.update({
+    id: '/departamentos',
+    path: '/departamentos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEscalaRoute = AuthenticatedEscalaRouteImport.update({
+  id: '/escala',
+  path: '/escala',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedVoluntariosRoute =
+  AuthenticatedVoluntariosRouteImport.update({
+    id: '/voluntarios',
+    path: '/voluntarios',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/cultos': typeof AuthenticatedCultosRoute
+  '/departamentos': typeof AuthenticatedDepartamentosRoute
+  '/escala': typeof AuthenticatedEscalaRoute
+  '/voluntarios': typeof AuthenticatedVoluntariosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/cultos': typeof AuthenticatedCultosRoute
+  '/departamentos': typeof AuthenticatedDepartamentosRoute
+  '/escala': typeof AuthenticatedEscalaRoute
+  '/voluntarios': typeof AuthenticatedVoluntariosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/cultos': typeof AuthenticatedCultosRoute
+  '/_authenticated/departamentos': typeof AuthenticatedDepartamentosRoute
+  '/_authenticated/escala': typeof AuthenticatedEscalaRoute
+  '/_authenticated/voluntarios': typeof AuthenticatedVoluntariosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    '/' | '/auth' | '/cultos' | '/departamentos' | '/escala' | '/voluntarios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/auth' | '/cultos' | '/departamentos' | '/escala' | '/voluntarios'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/cultos'
+    | '/_authenticated/departamentos'
+    | '/_authenticated/escala'
+    | '/_authenticated/voluntarios'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +112,72 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/cultos': {
+      id: '/_authenticated/cultos'
+      path: '/cultos'
+      fullPath: '/cultos'
+      preLoaderRoute: typeof AuthenticatedCultosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/departamentos': {
+      id: '/_authenticated/departamentos'
+      path: '/departamentos'
+      fullPath: '/departamentos'
+      preLoaderRoute: typeof AuthenticatedDepartamentosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/escala': {
+      id: '/_authenticated/escala'
+      path: '/escala'
+      fullPath: '/escala'
+      preLoaderRoute: typeof AuthenticatedEscalaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/voluntarios': {
+      id: '/_authenticated/voluntarios'
+      path: '/voluntarios'
+      fullPath: '/voluntarios'
+      preLoaderRoute: typeof AuthenticatedVoluntariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCultosRoute: typeof AuthenticatedCultosRoute
+  AuthenticatedDepartamentosRoute: typeof AuthenticatedDepartamentosRoute
+  AuthenticatedEscalaRoute: typeof AuthenticatedEscalaRoute
+  AuthenticatedVoluntariosRoute: typeof AuthenticatedVoluntariosRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCultosRoute: AuthenticatedCultosRoute,
+  AuthenticatedDepartamentosRoute: AuthenticatedDepartamentosRoute,
+  AuthenticatedEscalaRoute: AuthenticatedEscalaRoute,
+  AuthenticatedVoluntariosRoute: AuthenticatedVoluntariosRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
