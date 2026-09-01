@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedCultosRouteImport } from './routes/_authenticated/cultos'
+import { Route as AuthenticatedDepartamentosRouteImport } from './routes/_authenticated/departamentos'
 import { Route as AuthenticatedEscalaRouteImport } from './routes/_authenticated/escala'
 import { Route as AuthenticatedVoluntariosRouteImport } from './routes/_authenticated/voluntarios'
 
@@ -35,6 +36,12 @@ const AuthenticatedCultosRoute = AuthenticatedCultosRouteImport.update({
   path: '/cultos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDepartamentosRoute =
+  AuthenticatedDepartamentosRouteImport.update({
+    id: '/departamentos',
+    path: '/departamentos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedEscalaRoute = AuthenticatedEscalaRouteImport.update({
   id: '/escala',
   path: '/escala',
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/cultos': typeof AuthenticatedCultosRoute
+  '/departamentos': typeof AuthenticatedDepartamentosRoute
   '/escala': typeof AuthenticatedEscalaRoute
   '/voluntarios': typeof AuthenticatedVoluntariosRoute
 }
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/cultos': typeof AuthenticatedCultosRoute
+  '/departamentos': typeof AuthenticatedDepartamentosRoute
   '/escala': typeof AuthenticatedEscalaRoute
   '/voluntarios': typeof AuthenticatedVoluntariosRoute
 }
@@ -67,20 +76,23 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/cultos': typeof AuthenticatedCultosRoute
+  '/_authenticated/departamentos': typeof AuthenticatedDepartamentosRoute
   '/_authenticated/escala': typeof AuthenticatedEscalaRoute
   '/_authenticated/voluntarios': typeof AuthenticatedVoluntariosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/cultos' | '/escala' | '/voluntarios'
+  fullPaths:
+    '/' | '/auth' | '/cultos' | '/departamentos' | '/escala' | '/voluntarios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/cultos' | '/escala' | '/voluntarios'
+  to: '/' | '/auth' | '/cultos' | '/departamentos' | '/escala' | '/voluntarios'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/cultos'
+    | '/_authenticated/departamentos'
     | '/_authenticated/escala'
     | '/_authenticated/voluntarios'
   fileRoutesById: FileRoutesById
@@ -121,6 +133,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCultosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/departamentos': {
+      id: '/_authenticated/departamentos'
+      path: '/departamentos'
+      fullPath: '/departamentos'
+      preLoaderRoute: typeof AuthenticatedDepartamentosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/escala': {
       id: '/_authenticated/escala'
       path: '/escala'
@@ -140,12 +159,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCultosRoute: typeof AuthenticatedCultosRoute
+  AuthenticatedDepartamentosRoute: typeof AuthenticatedDepartamentosRoute
   AuthenticatedEscalaRoute: typeof AuthenticatedEscalaRoute
   AuthenticatedVoluntariosRoute: typeof AuthenticatedVoluntariosRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCultosRoute: AuthenticatedCultosRoute,
+  AuthenticatedDepartamentosRoute: AuthenticatedDepartamentosRoute,
   AuthenticatedEscalaRoute: AuthenticatedEscalaRoute,
   AuthenticatedVoluntariosRoute: AuthenticatedVoluntariosRoute,
 }
