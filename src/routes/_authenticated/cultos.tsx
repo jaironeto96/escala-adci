@@ -4,7 +4,15 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
-import { consultas, cor, dataLonga, hoje, hora } from "@/lib/dados";
+import {
+  consultas,
+  cor,
+  dataLonga,
+  gerarRecorrentes,
+  hoje,
+  hora,
+  MODELOS_RECORRENTES,
+} from "@/lib/dados";
 
 export const Route = createFileRoute("/_authenticated/cultos")({
   head: () => ({
