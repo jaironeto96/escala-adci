@@ -93,10 +93,54 @@ function CultosPage() {
         <p className="label-mono mt-3">{cultos.length} cultos na agenda</p>
       </section>
 
+      <section
+        className="rise mb-8 rounded-xl border border-line bg-surface p-5"
+        style={{ animationDelay: "60ms" }}
+      >
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="font-display text-xl font-medium">Cultos fixos</h2>
+          <span className="label-mono">recorrência semanal</span>
+        </div>
+        <ul className="mt-4 flex flex-wrap gap-1.5">
+          {MODELOS_RECORRENTES.map((m) => (
+            <li
+              key={m.titulo}
+              className="rounded-full bg-surface2 px-3 py-1 text-[11px] text-muted ring-1 ring-line"
+            >
+              <span className="text-ink">{m.titulo}</span> · {m.descricao}
+            </li>
+          ))}
+        </ul>
+        <div className="mt-5 flex flex-wrap items-end gap-3 text-[13px]">
+          <label>
+            <span className="label-mono">Gerar para as próximas</span>
+            <select
+              value={semanas}
+              onChange={(e) => setSemanas(Number(e.target.value))}
+              className="mt-1.5 block rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50"
+            >
+              {[4, 8, 12, 26, 52].map((n) => (
+                <option key={n} value={n}>
+                  {n} semanas
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            onClick={() => gerar.mutate()}
+            disabled={gerar.isPending}
+            className="rounded-md border border-clay/40 px-4 py-2 font-medium text-clay transition-colors hover:bg-clay/10 disabled:opacity-50"
+          >
+            Gerar agenda recorrente
+          </button>
+        </div>
+      </section>
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
           criar.mutate();
+
         }}
         className="rise mb-8 flex flex-wrap items-end gap-3 rounded-xl border border-line bg-surface p-5 text-[13px]"
         style={{ animationDelay: "120ms" }}
