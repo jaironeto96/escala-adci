@@ -67,6 +67,62 @@ export function hoje() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+export type ModeloRecorrente = {
+  titulo: string;
+  horario: string;
+  /** 0 = domingo ... 6 = sábado */
+  diaSemana: number;
+  /** somente na primeira ocorrência do mês */
+  primeiroDoMes?: boolean;
+  descricao: string;
+};
+
+export const MODELOS_RECORRENTES: ModeloRecorrente[] = [
+  { titulo: "Culto de Doutrina", horario: "19:30", diaSemana: 2, descricao: "Terças · 19h30" },
+  {
+    titulo: "Culto Clamando pelo Impossível",
+    horario: "19:30",
+    diaSemana: 4,
+    descricao: "Quintas · 19h30",
+  },
+  { titulo: "EBD", horario: "08:30", diaSemana: 0, descricao: "Domingos de manhã · 08h30" },
+  {
+    titulo: "Culto de Louvor e Adoração",
+    horario: "18:00",
+    diaSemana: 0,
+    descricao: "Domingos à noite · 18h",
+  },
+  {
+    titulo: "Culto de Santa Ceia",
+    horario: "19:00",
+    diaSemana: 6,
+    primeiroDoMes: true,
+    descricao: "1º sábado do mês · 19h",
+  },
+];
+
+function iso(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Gera as ocorrências dos cultos fixos entre hoje e `semanas` semanas à frente. */
+export function gerarRecorrentes(semanas = 8, inicioIso = hoje()) {
+  const inicio = new Date(`${inicioIso}T12:00:00`);
+  const fim = new Date(inicio);
+  fim.setDate(fim.getDate() + semanas * 7);
+
+  const lista: { titulo: string; data: string; horario: string }[] = [];
+  for (const d = new Date(inicio); d <= fim; d.setDate(d.getDate() + 1)) {
+    for (const m of MODELOS_RECORRENTES) {
+      if (d.getDay() !== m.diaSemana) continue;
+      if (m.primeiroDoMes && d.getDate() > 7) continue;
+      lista.push({ titulo: m.titulo, data: iso(d), horario: m.horario });
+    }
+  }
+  return lista;
+}
+
+
 async function pegar<T>(promise: PromiseLike<{ data: T | null; error: unknown }>) {
   const { data, error } = await promise;
   if (error) throw error;
