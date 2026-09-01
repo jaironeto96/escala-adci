@@ -14,7 +14,216 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cultos: {
+        Row: {
+          created_at: string
+          data: string
+          horario: string
+          id: string
+          titulo: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          horario?: string
+          id?: string
+          titulo: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          horario?: string
+          id?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
+      departamentos: {
+        Row: {
+          cor: string
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      escalas: {
+        Row: {
+          aviso_enviado_em: string | null
+          created_at: string
+          culto_id: string
+          funcao_id: string
+          id: string
+          pessoa_id: string
+        }
+        Insert: {
+          aviso_enviado_em?: string | null
+          created_at?: string
+          culto_id: string
+          funcao_id: string
+          id?: string
+          pessoa_id: string
+        }
+        Update: {
+          aviso_enviado_em?: string | null
+          created_at?: string
+          culto_id?: string
+          funcao_id?: string
+          id?: string
+          pessoa_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escalas_culto_id_fkey"
+            columns: ["culto_id"]
+            isOneToOne: false
+            referencedRelation: "cultos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escalas_funcao_id_fkey"
+            columns: ["funcao_id"]
+            isOneToOne: false
+            referencedRelation: "funcoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escalas_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funcoes: {
+        Row: {
+          created_at: string
+          departamento_id: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          departamento_id: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          departamento_id?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funcoes_departamento_id_fkey"
+            columns: ["departamento_id"]
+            isOneToOne: false
+            referencedRelation: "departamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pessoa_departamentos: {
+        Row: {
+          departamento_id: string
+          pessoa_id: string
+        }
+        Insert: {
+          departamento_id: string
+          pessoa_id: string
+        }
+        Update: {
+          departamento_id?: string
+          pessoa_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pessoa_departamentos_departamento_id_fkey"
+            columns: ["departamento_id"]
+            isOneToOne: false
+            referencedRelation: "departamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pessoa_departamentos_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pessoa_funcoes: {
+        Row: {
+          funcao_id: string
+          pessoa_id: string
+        }
+        Insert: {
+          funcao_id: string
+          pessoa_id: string
+        }
+        Update: {
+          funcao_id?: string
+          pessoa_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pessoa_funcoes_funcao_id_fkey"
+            columns: ["funcao_id"]
+            isOneToOne: false
+            referencedRelation: "funcoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pessoa_funcoes_pessoa_id_fkey"
+            columns: ["pessoa_id"]
+            isOneToOne: false
+            referencedRelation: "pessoas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pessoas: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          telefone: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          nome: string
+          telefone?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          telefone?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
