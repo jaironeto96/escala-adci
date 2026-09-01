@@ -57,16 +57,16 @@
 :root {
   --radius: 0.5rem;
 
-  --paper: oklch(0.193 0.011 80.5);
-  --surface: oklch(0.222 0.014 72.1);
-  --surface2: oklch(0.24 0.016 71.3);
-  --ink: oklch(0.93 0.022 83.3);
-  --line: oklch(0.93 0.022 83.3 / 12%);
+  --paper: oklch(0.145 0.004 285.8);
+  --surface: oklch(0.185 0.005 285.8);
+  --surface2: oklch(0.225 0.006 285.8);
+  --ink: oklch(0.955 0.003 286.3);
+  --line: oklch(0.955 0.003 286.3 / 11%);
   --clay: oklch(0.645 0.134 44.9);
   --mut: oklch(0.706 0.024 269.3);
   --amber: oklch(0.722 0.113 74.2);
   --olive: oklch(0.683 0.071 119.3);
-  --stone: oklch(0.615 0.019 84.6);
+  --stone: oklch(0.65 0.008 286.3);
 
   --background: var(--paper);
   --foreground: var(--ink);
@@ -78,8 +78,8 @@
   --primary-foreground: var(--paper);
   --secondary: var(--surface2);
   --secondary-foreground: var(--ink);
-  --muted: oklch(0.93 0.022 83.3 / 45%);
-  --muted-foreground: oklch(0.93 0.022 83.3 / 55%);
+  --muted: oklch(0.955 0.003 286.3 / 48%);
+  --muted-foreground: oklch(0.955 0.003 286.3 / 60%);
   --accent: var(--surface2);
   --accent-foreground: var(--ink);
   --destructive: oklch(0.6 0.19 25);
