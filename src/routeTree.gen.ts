@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedEscalaRouteImport } from './routes/_authenticated/escala'
+import { Route as AuthenticatedVoluntariosRouteImport } from './routes/_authenticated/voluntarios'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -33,16 +34,24 @@ const AuthenticatedEscalaRoute = AuthenticatedEscalaRouteImport.update({
   path: '/escala',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedVoluntariosRoute =
+  AuthenticatedVoluntariosRouteImport.update({
+    id: '/voluntarios',
+    path: '/voluntarios',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/escala': typeof AuthenticatedEscalaRoute
+  '/voluntarios': typeof AuthenticatedVoluntariosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/escala': typeof AuthenticatedEscalaRoute
+  '/voluntarios': typeof AuthenticatedVoluntariosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -50,13 +59,20 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/escala': typeof AuthenticatedEscalaRoute
+  '/_authenticated/voluntarios': typeof AuthenticatedVoluntariosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/escala'
+  fullPaths: '/' | '/auth' | '/escala' | '/voluntarios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/escala'
-  id: '__root__' | '/' | '/_authenticated' | '/auth' | '/_authenticated/escala'
+  to: '/' | '/auth' | '/escala' | '/voluntarios'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/escala'
+    | '/_authenticated/voluntarios'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -95,15 +111,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEscalaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/voluntarios': {
+      id: '/_authenticated/voluntarios'
+      path: '/voluntarios'
+      fullPath: '/voluntarios'
+      preLoaderRoute: typeof AuthenticatedVoluntariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedEscalaRoute: typeof AuthenticatedEscalaRoute
+  AuthenticatedVoluntariosRoute: typeof AuthenticatedVoluntariosRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEscalaRoute: AuthenticatedEscalaRoute,
+  AuthenticatedVoluntariosRoute: AuthenticatedVoluntariosRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
