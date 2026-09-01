@@ -66,7 +66,6 @@ function EscalaPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["escalas"] });
-      setAlvo(null);
       toast.success("Voluntário escalado.");
     },
     onError: () => toast.error("Não foi possível escalar."),
@@ -87,6 +86,10 @@ function EscalaPage() {
     proximos.some((c) => c.id === e.culto_id),
   ).length;
   const vazios = proximos.length * linhas.length - totalEscalados;
+
+  const jaEscalados = alvo
+    ? escalas.filter((e) => e.culto_id === alvo.cultoId && e.funcao_id === alvo.funcaoId)
+    : [];
 
   const candidatos = alvo
     ? pessoas.filter((p) =>
@@ -185,7 +188,7 @@ function EscalaPage() {
                               onClick={() => setAlvo({ cultoId: culto.id, funcaoId: f.id })}
                               className="rounded-md border border-dashed border-line px-2.5 py-1 text-[12px] text-muted transition-colors hover:border-clay/50 hover:text-clay"
                             >
-                              Atribuir
+                              {atribuicoes.length > 0 ? "+ Adicionar" : "Atribuir"}
                             </button>
                           </div>
                         </td>
@@ -219,25 +222,47 @@ function EscalaPage() {
                 </div>
               </div>
               <div>
-                <span className="label-mono">Voluntários com esta função</span>
+                <span className="label-mono">
+                  Voluntários com esta função · {jaEscalados.length} selecionados
+                </span>
                 <div className="mt-1.5 space-y-1">
                   {candidatos.length === 0 ? (
                     <p className="text-muted">
                       Nenhum voluntário cadastrado nesta função ainda.
                     </p>
                   ) : (
-                    candidatos.map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => atribuir.mutate({ pessoaId: p.id })}
-                        className="flex w-full items-center justify-between rounded-md border border-line bg-surface2 px-3 py-2 text-left transition-colors hover:border-clay/50"
-                      >
-                        <span>{p.nome}</span>
-                        <span className="font-mono text-[11px] text-muted">
-                          {pessoaFuncoes.filter((pf) => pf.pessoa_id === p.id).length} funções
-                        </span>
-                      </button>
-                    ))
+                    candidatos.map((p) => {
+                      const atual = jaEscalados.find((e) => e.pessoa_id === p.id);
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() =>
+                            atual
+                              ? remover.mutate(atual.id)
+                              : atribuir.mutate({ pessoaId: p.id })
+                          }
+                          className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left transition-colors ${
+                            atual
+                              ? "border-clay/50 bg-clay/10"
+                              : "border-line bg-surface2 hover:border-clay/50"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span
+                              className={`grid size-4 place-items-center rounded-[4px] border text-[10px] ${
+                                atual ? "border-clay bg-clay text-paper" : "border-line"
+                              }`}
+                            >
+                              {atual ? "✓" : ""}
+                            </span>
+                            {p.nome}
+                          </span>
+                          <span className="font-mono text-[11px] text-muted">
+                            {pessoaFuncoes.filter((pf) => pf.pessoa_id === p.id).length} funções
+                          </span>
+                        </button>
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -251,7 +276,7 @@ function EscalaPage() {
                 onClick={() => setAlvo(null)}
                 className="w-full rounded-md border border-line py-2 text-[13px] text-muted transition-colors hover:text-ink"
               >
-                Cancelar
+                Concluir
               </button>
             </div>
           </div>
