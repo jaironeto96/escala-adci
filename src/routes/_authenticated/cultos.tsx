@@ -38,6 +38,29 @@ function CultosPage() {
   const { data: departamentos = [] } = useQuery(consultas.departamentos());
 
   const [form, setForm] = useState({ titulo: "", data: hoje(), horario: "19:00" });
+  const [semanas, setSemanas] = useState(8);
+
+  const gerar = useMutation({
+    mutationFn: async () => {
+      const previstos = gerarRecorrentes(semanas);
+      const novos = previstos.filter(
+        (p) =>
+          !cultos.some(
+            (c) => c.data === p.data && hora(c.horario) === p.horario && c.titulo === p.titulo,
+          ),
+      );
+      if (novos.length === 0) return 0;
+      const { error } = await supabase.from("cultos").insert(novos);
+      if (error) throw error;
+      return novos.length;
+    },
+    onSuccess: (n) => {
+      qc.invalidateQueries({ queryKey: ["cultos"] });
+      toast.success(n === 0 ? "Agenda já está em dia." : `${n} cultos adicionados.`);
+    },
+    onError: () => toast.error("Não foi possível gerar os cultos."),
+  });
+
 
   const criar = useMutation({
     mutationFn: async () => {
