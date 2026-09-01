@@ -6,12 +6,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { consultas, cor, dataCurta, hoje, hora } from "@/lib/dados";
 
-type Busca = { depto?: string };
+type Busca = { depto?: string | undefined };
 
 export const Route = createFileRoute("/_authenticated/escala")({
-  validateSearch: (search: Record<string, unknown>): Busca => ({
-    depto: typeof search["depto"] === "string" ? search["depto"] : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): Busca =>
+    typeof search["depto"] === "string" ? { depto: search["depto"] } : {},
+
   head: () => ({
     meta: [
       { title: "Grade de escala · Escala de cultos" },
