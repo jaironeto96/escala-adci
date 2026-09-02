@@ -107,7 +107,7 @@ function EscalaPage() {
             Grade de <span className="font-medium italic text-clay">cultos</span> por função
           </h1>
           <p className="label-mono mt-3">
-            {proximos.length} cultos à frente · {pessoas.length} voluntários ativos
+            {"\n"}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
