@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { consultas, cor, CORES_DISPONIVEIS } from "@/lib/dados";
+import { usePapel } from "@/hooks/usePapel";
 
 export const Route = createFileRoute("/_authenticated/departamentos")({
   head: () => ({
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/departamentos")({
 
 function DepartamentosPage() {
   const qc = useQueryClient();
+  const { ehAdmin } = usePapel();
   const { data: departamentos = [] } = useQuery(consultas.departamentos());
   const { data: funcoes = [] } = useQuery(consultas.funcoes());
   const { data: pessoaDeptos = [] } = useQuery(consultas.pessoaDepartamentos());
@@ -83,6 +85,7 @@ function DepartamentosPage() {
         </p>
       </section>
 
+      {ehAdmin ? (
       <form
         onSubmit={(e) => {
           e.preventDefault();

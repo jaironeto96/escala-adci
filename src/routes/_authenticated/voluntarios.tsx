@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { consultas, cor, iniciais, type Pessoa } from "@/lib/dados";
+import { usePapel } from "@/hooks/usePapel";
 
 export const Route = createFileRoute("/_authenticated/voluntarios")({
   head: () => ({
@@ -29,6 +30,7 @@ const vazio = { nome: "", email: "", telefone: "" };
 
 function VoluntariosPage() {
   const qc = useQueryClient();
+  const { ehAdmin } = usePapel();
   const { data: departamentos = [] } = useQuery(consultas.departamentos());
   const { data: funcoes = [] } = useQuery(consultas.funcoes());
   const { data: pessoas = [] } = useQuery(consultas.pessoas());
@@ -122,12 +124,14 @@ function VoluntariosPage() {
           <h1 className="font-display text-4xl font-light tracking-tight">Voluntários</h1>
           <p className="label-mono mt-3">{pessoas.length} cadastrados</p>
         </div>
-        <button
-          onClick={abrirNovo}
-          className="rounded-md bg-clay px-4 py-2 text-[13px] font-medium text-paper transition-colors hover:bg-clay/85"
-        >
-          Novo voluntário
-        </button>
+        {ehAdmin ? (
+          <button
+            onClick={abrirNovo}
+            className="rounded-md bg-clay px-4 py-2 text-[13px] font-medium text-paper transition-colors hover:bg-clay/85"
+          >
+            Novo voluntário
+          </button>
+        ) : null}
       </section>
 
       <section className="rise space-y-1" style={{ animationDelay: "120ms" }}>
@@ -173,7 +177,7 @@ function VoluntariosPage() {
                   </span>
                 ))}
               </div>
-              <div className="flex shrink-0 gap-3">
+              <div className={`flex shrink-0 gap-3 ${ehAdmin ? "" : "hidden"}`}>
                 <button
                   onClick={() => abrirEdicao(p)}
                   className="font-mono text-[11px] text-muted transition-colors hover:text-ink"
