@@ -125,6 +125,8 @@ function DepartamentosPage() {
           Adicionar
         </button>
       </form>
+      ) : null}
+
 
       <section className="rise grid gap-3 md:grid-cols-2" style={{ animationDelay: "180ms" }}>
         {departamentos.map((d) => {
