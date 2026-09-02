@@ -104,7 +104,7 @@ function EscalaPage() {
       <section className="rise mb-8 flex flex-wrap items-end justify-between gap-8">
         <div className="max-w-[46ch]">
           <h1 className="text-balance font-display text-5xl font-light leading-[1.02] tracking-tight">
-            Grade de <span className="font-medium italic text-clay">cultos</span> por função
+            Escala
           </h1>
           <p className="label-mono mt-3">
             {"\n"}
