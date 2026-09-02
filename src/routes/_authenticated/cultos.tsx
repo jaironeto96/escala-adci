@@ -13,6 +13,7 @@ import {
   hora,
   MODELOS_RECORRENTES,
 } from "@/lib/dados";
+import { usePapel } from "@/hooks/usePapel";
 
 export const Route = createFileRoute("/_authenticated/cultos")({
   head: () => ({
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/_authenticated/cultos")({
 
 function CultosPage() {
   const qc = useQueryClient();
+  const { ehAdmin } = usePapel();
   const { data: cultos = [] } = useQuery(consultas.cultos());
   const { data: escalas = [] } = useQuery(consultas.escalas());
   const { data: pessoas = [] } = useQuery(consultas.pessoas());
@@ -111,6 +113,7 @@ function CultosPage() {
             </li>
           ))}
         </ul>
+        {ehAdmin ? (
         <div className="mt-5 flex flex-wrap items-end gap-3 text-[13px]">
           <label>
             <span className="label-mono">Gerar para as próximas</span>
@@ -134,8 +137,10 @@ function CultosPage() {
             Gerar agenda recorrente
           </button>
         </div>
+        ) : null}
       </section>
 
+      {ehAdmin ? (
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -182,6 +187,7 @@ function CultosPage() {
           Adicionar culto
         </button>
       </form>
+      ) : null}
 
       <section className="rise space-y-3" style={{ animationDelay: "180ms" }}>
         {cultos.map((c) => {
@@ -199,6 +205,7 @@ function CultosPage() {
                   <span className="font-mono text-[11px] text-muted">
                     {doCulto.length} escalados
                   </span>
+                  {ehAdmin ? (
                   <button
                     onClick={() => excluir.mutate(c.id)}
                     className="font-mono text-[11px] text-muted transition-colors hover:text-clay"

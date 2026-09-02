@@ -143,12 +143,14 @@ function DepartamentosPage() {
                   <span className="font-mono text-[11px] text-muted">
                     {pessoaDeptos.filter((p) => p.departamento_id === d.id).length} pessoas
                   </span>
-                  <button
-                    onClick={() => excluirDepto.mutate(d.id)}
-                    className="font-mono text-[11px] text-muted transition-colors hover:text-clay"
-                  >
-                    Excluir
-                  </button>
+                  {ehAdmin ? (
+                    <button
+                      onClick={() => excluirDepto.mutate(d.id)}
+                      className="font-mono text-[11px] text-muted transition-colors hover:text-clay"
+                    >
+                      Excluir
+                    </button>
+                  ) : null}
                 </div>
               </div>
 
@@ -156,8 +158,9 @@ function DepartamentosPage() {
                 {doDepto.map((f) => (
                   <button
                     key={f.id}
-                    onClick={() => excluirFuncao.mutate(f.id)}
-                    title="Remover função"
+                    onClick={() => ehAdmin && excluirFuncao.mutate(f.id)}
+                    disabled={!ehAdmin}
+                    title={ehAdmin ? "Remover função" : undefined}
                     className={`rounded-full px-2.5 py-1 text-[11px] ring-1 transition-colors hover:opacity-70 ${c.chip}`}
                   >
                     {f.nome}
@@ -165,6 +168,7 @@ function DepartamentosPage() {
                 ))}
               </div>
 
+              {ehAdmin ? (
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -186,6 +190,7 @@ function DepartamentosPage() {
                   Adicionar
                 </button>
               </form>
+              ) : null}
             </div>
           );
         })}
