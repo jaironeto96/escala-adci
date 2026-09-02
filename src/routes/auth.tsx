@@ -77,7 +77,7 @@ function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-paper px-4 text-ink">
       <div className="rise w-full max-w-sm rounded-xl border border-line bg-surface p-6">
         <div className="flex items-baseline gap-2">
-          <span className="font-display text-[22px] font-semibold tracking-tight">Escala</span>
+          <span className="font-display text-[22px] font-semibold tracking-tight">ADCI</span>
           <span className="label-mono border-l border-line pl-2">Ministérios</span>
         </div>
         <h1 className="mt-6 font-display text-2xl font-light tracking-tight">
