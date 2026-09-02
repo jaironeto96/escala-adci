@@ -34,7 +34,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-8 px-6">
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-[22px] font-semibold tracking-tight">Escala</span>
+            <span className="font-display text-[22px] font-semibold tracking-tight">ADCI</span>
             <span className="label-mono border-l border-line pl-2">Ministérios</span>
           </div>
           <nav className="hidden items-center gap-6 text-[13px] md:flex">
