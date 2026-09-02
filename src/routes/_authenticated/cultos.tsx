@@ -212,7 +212,9 @@ function CultosPage() {
                   >
                     Excluir
                   </button>
+                  ) : null}
                 </div>
+
               </div>
               <div className="mt-4 flex flex-wrap gap-1.5">
                 {doCulto.length === 0 ? (
