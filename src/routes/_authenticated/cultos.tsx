@@ -92,7 +92,7 @@ function CultosPage() {
     <>
       <section className="rise mb-8">
         <h1 className="font-display text-4xl font-light tracking-tight">Próximos cultos</h1>
-        <p className="label-mono mt-3">{cultos.length} cultos na agenda</p>
+        <p className="label-mono mt-3">{"\n"}</p>
       </section>
 
       <section
