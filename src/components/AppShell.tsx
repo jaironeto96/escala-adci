@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { consultas, cor, dataCurta, hoje, hora } from "@/lib/dados";
+import { usePapel } from "@/hooks/usePapel";
 
 const NAV = [
   { to: "/escala", label: "Escala" },
@@ -14,6 +15,7 @@ const NAV = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const { papel, ehAdmin } = usePapel();
   const { data: departamentos = [] } = useQuery(consultas.departamentos());
   const { data: pessoaDeptos = [] } = useQuery(consultas.pessoaDepartamentos());
   const { data: cultos = [] } = useQuery(consultas.cultos());
@@ -36,7 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="label-mono border-l border-line pl-2">Ministérios</span>
           </div>
           <nav className="hidden items-center gap-6 text-[13px] md:flex">
-            {NAV.map((item) => (
+            {[...NAV, ...(ehAdmin ? [{ to: "/usuarios", label: "Acessos" } as const] : [])].map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -48,6 +50,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-4">
+            <span className="hidden rounded-full border border-line px-3 py-1 font-mono text-[11px] text-muted sm:inline">
+              {papel === "admin" ? "Administrador" : papel === "moderador" ? "Moderador" : "Visualizador"}
+            </span>
             {cultoHoje ? (
               <div className="hidden items-center gap-2 rounded-md border border-line px-3 py-2 lg:flex">
                 <span className="size-1.5 rounded-full bg-clay" />

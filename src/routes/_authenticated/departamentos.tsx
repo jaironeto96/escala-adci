@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { consultas, cor, CORES_DISPONIVEIS } from "@/lib/dados";
+import { usePapel } from "@/hooks/usePapel";
 
 export const Route = createFileRoute("/_authenticated/departamentos")({
   head: () => ({
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/departamentos")({
 
 function DepartamentosPage() {
   const qc = useQueryClient();
+  const { ehAdmin } = usePapel();
   const { data: departamentos = [] } = useQuery(consultas.departamentos());
   const { data: funcoes = [] } = useQuery(consultas.funcoes());
   const { data: pessoaDeptos = [] } = useQuery(consultas.pessoaDepartamentos());
@@ -83,6 +85,7 @@ function DepartamentosPage() {
         </p>
       </section>
 
+      {ehAdmin ? (
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -122,6 +125,8 @@ function DepartamentosPage() {
           Adicionar
         </button>
       </form>
+      ) : null}
+
 
       <section className="rise grid gap-3 md:grid-cols-2" style={{ animationDelay: "180ms" }}>
         {departamentos.map((d) => {
@@ -138,12 +143,14 @@ function DepartamentosPage() {
                   <span className="font-mono text-[11px] text-muted">
                     {pessoaDeptos.filter((p) => p.departamento_id === d.id).length} pessoas
                   </span>
-                  <button
-                    onClick={() => excluirDepto.mutate(d.id)}
-                    className="font-mono text-[11px] text-muted transition-colors hover:text-clay"
-                  >
-                    Excluir
-                  </button>
+                  {ehAdmin ? (
+                    <button
+                      onClick={() => excluirDepto.mutate(d.id)}
+                      className="font-mono text-[11px] text-muted transition-colors hover:text-clay"
+                    >
+                      Excluir
+                    </button>
+                  ) : null}
                 </div>
               </div>
 
@@ -151,8 +158,9 @@ function DepartamentosPage() {
                 {doDepto.map((f) => (
                   <button
                     key={f.id}
-                    onClick={() => excluirFuncao.mutate(f.id)}
-                    title="Remover função"
+                    onClick={() => ehAdmin && excluirFuncao.mutate(f.id)}
+                    disabled={!ehAdmin}
+                    title={ehAdmin ? "Remover função" : undefined}
                     className={`rounded-full px-2.5 py-1 text-[11px] ring-1 transition-colors hover:opacity-70 ${c.chip}`}
                   >
                     {f.nome}
@@ -160,6 +168,7 @@ function DepartamentosPage() {
                 ))}
               </div>
 
+              {ehAdmin ? (
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -181,6 +190,7 @@ function DepartamentosPage() {
                   Adicionar
                 </button>
               </form>
+              ) : null}
             </div>
           );
         })}
