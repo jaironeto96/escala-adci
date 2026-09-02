@@ -35,7 +35,7 @@ function Index() {
   return (
     <div className="min-h-screen bg-paper text-ink">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-2 px-6">
-        <span className="font-display text-[22px] font-semibold tracking-tight">Escala</span>
+        <span className="font-display text-[22px] font-semibold tracking-tight">ADCI</span>
         <span className="label-mono border-l border-line pl-2">Ministérios</span>
       </div>
 
