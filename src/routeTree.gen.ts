@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedCultosRouteImport } from './routes/_authenticated/cultos'
 import { Route as AuthenticatedDepartamentosRouteImport } from './routes/_authenticated/departamentos'
 import { Route as AuthenticatedEscalaRouteImport } from './routes/_authenticated/escala'
+import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedVoluntariosRouteImport } from './routes/_authenticated/voluntarios'
 
 const IndexRoute = IndexRouteImport.update({
@@ -47,6 +48,11 @@ const AuthenticatedEscalaRoute = AuthenticatedEscalaRouteImport.update({
   path: '/escala',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedVoluntariosRoute =
   AuthenticatedVoluntariosRouteImport.update({
     id: '/voluntarios',
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/cultos': typeof AuthenticatedCultosRoute
   '/departamentos': typeof AuthenticatedDepartamentosRoute
   '/escala': typeof AuthenticatedEscalaRoute
+  '/usuarios': typeof AuthenticatedUsuariosRoute
   '/voluntarios': typeof AuthenticatedVoluntariosRoute
 }
 export interface FileRoutesByTo {
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/cultos': typeof AuthenticatedCultosRoute
   '/departamentos': typeof AuthenticatedDepartamentosRoute
   '/escala': typeof AuthenticatedEscalaRoute
+  '/usuarios': typeof AuthenticatedUsuariosRoute
   '/voluntarios': typeof AuthenticatedVoluntariosRoute
 }
 export interface FileRoutesById {
@@ -78,14 +86,28 @@ export interface FileRoutesById {
   '/_authenticated/cultos': typeof AuthenticatedCultosRoute
   '/_authenticated/departamentos': typeof AuthenticatedDepartamentosRoute
   '/_authenticated/escala': typeof AuthenticatedEscalaRoute
+  '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/voluntarios': typeof AuthenticatedVoluntariosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/cultos' | '/departamentos' | '/escala' | '/voluntarios'
+    | '/'
+    | '/auth'
+    | '/cultos'
+    | '/departamentos'
+    | '/escala'
+    | '/usuarios'
+    | '/voluntarios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/cultos' | '/departamentos' | '/escala' | '/voluntarios'
+  to:
+    | '/'
+    | '/auth'
+    | '/cultos'
+    | '/departamentos'
+    | '/escala'
+    | '/usuarios'
+    | '/voluntarios'
   id:
     | '__root__'
     | '/'
@@ -94,6 +116,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cultos'
     | '/_authenticated/departamentos'
     | '/_authenticated/escala'
+    | '/_authenticated/usuarios'
     | '/_authenticated/voluntarios'
   fileRoutesById: FileRoutesById
 }
@@ -147,6 +170,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEscalaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/usuarios': {
+      id: '/_authenticated/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/voluntarios': {
       id: '/_authenticated/voluntarios'
       path: '/voluntarios'
@@ -161,6 +191,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCultosRoute: typeof AuthenticatedCultosRoute
   AuthenticatedDepartamentosRoute: typeof AuthenticatedDepartamentosRoute
   AuthenticatedEscalaRoute: typeof AuthenticatedEscalaRoute
+  AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedVoluntariosRoute: typeof AuthenticatedVoluntariosRoute
 }
 
@@ -168,6 +199,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCultosRoute: AuthenticatedCultosRoute,
   AuthenticatedDepartamentosRoute: AuthenticatedDepartamentosRoute,
   AuthenticatedEscalaRoute: AuthenticatedEscalaRoute,
+  AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedVoluntariosRoute: AuthenticatedVoluntariosRoute,
 }
 

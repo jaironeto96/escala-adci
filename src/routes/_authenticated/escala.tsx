@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { consultas, cor, dataCurta, hoje, hora } from "@/lib/dados";
+import { usePapel } from "@/hooks/usePapel";
 
 type Busca = { depto?: string | undefined };
 
@@ -33,6 +34,7 @@ function EscalaPage() {
   const { depto } = Route.useSearch();
   const navigate = Route.useNavigate();
   const qc = useQueryClient();
+  const { podeEscalar } = usePapel();
 
   const { data: departamentos = [] } = useQuery(consultas.departamentos());
   const { data: funcoes = [] } = useQuery(consultas.funcoes());
@@ -176,20 +178,25 @@ function EscalaPage() {
                               return (
                                 <button
                                   key={e.id}
-                                  onClick={() => remover.mutate(e.id)}
-                                  title="Remover da escala"
-                                  className="rounded-md bg-surface2 px-2.5 py-1 text-[12px] ring-1 ring-line transition-colors hover:text-clay"
+                                  onClick={() => podeEscalar && remover.mutate(e.id)}
+                                  disabled={!podeEscalar}
+                                  title={podeEscalar ? "Remover da escala" : undefined}
+                                  className="rounded-md bg-surface2 px-2.5 py-1 text-[12px] ring-1 ring-line transition-colors enabled:hover:text-clay"
                                 >
                                   {p?.nome ?? "—"}
                                 </button>
                               );
                             })}
-                            <button
-                              onClick={() => setAlvo({ cultoId: culto.id, funcaoId: f.id })}
-                              className="rounded-md border border-dashed border-line px-2.5 py-1 text-[12px] text-muted transition-colors hover:border-clay/50 hover:text-clay"
-                            >
-                              {atribuicoes.length > 0 ? "+ Adicionar" : "Atribuir"}
-                            </button>
+                            {podeEscalar ? (
+                              <button
+                                onClick={() => setAlvo({ cultoId: culto.id, funcaoId: f.id })}
+                                className="rounded-md border border-dashed border-line px-2.5 py-1 text-[12px] text-muted transition-colors hover:border-clay/50 hover:text-clay"
+                              >
+                                {atribuicoes.length > 0 ? "+ Adicionar" : "Atribuir"}
+                              </button>
+                            ) : atribuicoes.length === 0 ? (
+                              <span className="font-mono text-[11px] text-muted">—</span>
+                            ) : null}
                           </div>
                         </td>
                       );
