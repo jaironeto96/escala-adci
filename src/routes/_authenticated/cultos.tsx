@@ -36,7 +36,7 @@ export const Route = createFileRoute("/_authenticated/cultos")({
 
 function CultosPage() {
   const qc = useQueryClient();
-  const { ehAdmin } = usePapel();
+  const { ehAdmin, podeEscalar } = usePapel();
   const { data: cultos = [] } = useQuery(consultas.cultos());
   const { data: escalas = [] } = useQuery(consultas.escalas());
   const { data: pessoas = [] } = useQuery(consultas.pessoas());
@@ -45,6 +45,17 @@ function CultosPage() {
 
   const [form, setForm] = useState({ titulo: "", data: hoje(), horario: "19:00" });
   const [semanas, setSemanas] = useState(8);
+  const [dias, setDias] = useState<number[]>([]);
+  const [alvo, setAlvo] = useState<{ cultoId: string; funcaoId: string } | null>(null);
+
+  const visiveis = useMemo(
+    () =>
+      dias.length === 0
+        ? cultos
+        : cultos.filter((c) => dias.includes(new Date(`${c.data}T12:00:00`).getDay())),
+    [cultos, dias],
+  );
+
 
   const gerar = useMutation({
     mutationFn: async () => {
