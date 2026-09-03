@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,10 @@ import {
   MODELOS_RECORRENTES,
 } from "@/lib/dados";
 import { usePapel } from "@/hooks/usePapel";
+import { AtribuirModal } from "@/components/AtribuirModal";
+
+const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
 
 export const Route = createFileRoute("/_authenticated/cultos")({
   head: () => ({
