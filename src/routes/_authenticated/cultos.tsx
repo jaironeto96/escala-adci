@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,10 @@ import {
   MODELOS_RECORRENTES,
 } from "@/lib/dados";
 import { usePapel } from "@/hooks/usePapel";
+import { AtribuirModal } from "@/components/AtribuirModal";
+
+const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
 
 export const Route = createFileRoute("/_authenticated/cultos")({
   head: () => ({
@@ -32,7 +36,7 @@ export const Route = createFileRoute("/_authenticated/cultos")({
 
 function CultosPage() {
   const qc = useQueryClient();
-  const { ehAdmin } = usePapel();
+  const { ehAdmin, podeEscalar } = usePapel();
   const { data: cultos = [] } = useQuery(consultas.cultos());
   const { data: escalas = [] } = useQuery(consultas.escalas());
   const { data: pessoas = [] } = useQuery(consultas.pessoas());
@@ -41,6 +45,17 @@ function CultosPage() {
 
   const [form, setForm] = useState({ titulo: "", data: hoje(), horario: "19:00" });
   const [semanas, setSemanas] = useState(8);
+  const [dias, setDias] = useState<number[]>([]);
+  const [alvo, setAlvo] = useState<{ cultoId: string; funcaoId: string } | null>(null);
+
+  const visiveis = useMemo(
+    () =>
+      dias.length === 0
+        ? cultos
+        : cultos.filter((c) => dias.includes(new Date(`${c.data}T12:00:00`).getDay())),
+    [cultos, dias],
+  );
+
 
   const gerar = useMutation({
     mutationFn: async () => {
@@ -189,8 +204,31 @@ function CultosPage() {
       </form>
       ) : null}
 
+      <section className="rise mb-4 flex flex-wrap items-center gap-2" style={{ animationDelay: "150ms" }}>
+        <span className="label-mono">Dias</span>
+        <button
+          onClick={() => setDias([])}
+          className={`rounded-full border border-line px-3 py-1 font-mono text-[11px] ${dias.length === 0 ? "text-ink" : "text-muted"}`}
+        >
+          Todos
+        </button>
+        {DIAS_SEMANA.map((d, i) => (
+          <button
+            key={d}
+            onClick={() =>
+              setDias((atual) =>
+                atual.includes(i) ? atual.filter((x) => x !== i) : [...atual, i],
+              )
+            }
+            className={`rounded-full border px-3 py-1 font-mono text-[11px] ${dias.includes(i) ? "border-clay/50 text-clay" : "border-line text-muted"}`}
+          >
+            {d}
+          </button>
+        ))}
+      </section>
+
       <section className="rise space-y-3" style={{ animationDelay: "180ms" }}>
-        {cultos.map((c) => {
+        {visiveis.map((c) => {
           const doCulto = escalas.filter((e) => e.culto_id === c.id);
           return (
             <div key={c.id} className="rounded-xl border border-line bg-surface p-5">
@@ -216,28 +254,56 @@ function CultosPage() {
                 </div>
 
               </div>
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {doCulto.length === 0 ? (
-                  <span className="text-[13px] text-muted">Ninguém escalado ainda.</span>
-                ) : (
-                  doCulto.map((e) => {
-                    const f = funcoes.find((x) => x.id === e.funcao_id);
-                    const d = departamentos.find((x) => x.id === f?.departamento_id);
-                    return (
-                      <span
-                        key={e.id}
-                        className={`rounded-full px-2.5 py-1 text-[11px] ring-1 ${cor(d?.cor).chip}`}
-                      >
-                        {pessoas.find((p) => p.id === e.pessoa_id)?.nome} · {f?.nome}
-                      </span>
-                    );
-                  })
-                )}
+              <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {funcoes.map((f) => {
+                  const d = departamentos.find((x) => x.id === f.departamento_id);
+                  const naFuncao = doCulto.filter((e) => e.funcao_id === f.id);
+                  return (
+                    <div
+                      key={f.id}
+                      className="rounded-lg border border-line bg-surface2 px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2 font-mono text-[11px] text-muted">
+                        <span className={`size-2 rounded-full ${cor(d?.cor).dot}`} />
+                        {f.nome}
+                      </div>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        {naFuncao.map((e) => (
+                          <span
+                            key={e.id}
+                            className={`rounded-full px-2.5 py-1 text-[11px] ring-1 ${cor(d?.cor).chip}`}
+                          >
+                            {pessoas.find((p) => p.id === e.pessoa_id)?.nome}
+                          </span>
+                        ))}
+                        {podeEscalar ? (
+                          <button
+                            onClick={() => setAlvo({ cultoId: c.id, funcaoId: f.id })}
+                            className="rounded-md border border-dashed border-line px-2.5 py-1 text-[11px] text-muted transition-colors hover:border-clay/50 hover:text-clay"
+                          >
+                            {naFuncao.length > 0 ? "+" : "Atribuir"}
+                          </button>
+                        ) : naFuncao.length === 0 ? (
+                          <span className="font-mono text-[11px] text-muted">—</span>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
         })}
       </section>
+
+      {alvo ? (
+        <AtribuirModal
+          cultoId={alvo.cultoId}
+          funcaoId={alvo.funcaoId}
+          onClose={() => setAlvo(null)}
+        />
+      ) : null}
+
     </>
   );
 }
