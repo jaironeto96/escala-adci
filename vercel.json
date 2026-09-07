@@ -4,5 +4,11 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/aviso-escala",
+      "schedule": "0 10 * * *"
+    }
   ]
 }

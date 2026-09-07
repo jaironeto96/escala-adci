@@ -58,10 +58,7 @@ function EscalaPage() {
   const [alvo, setAlvo] = useState<{ cultoId: string; funcaoId: string } | null>(null);
   const [mes, setMes] = useState(() => hoje().slice(0, 7));
 
-  const linhas = useMemo(
-    () => cultos.filter((c) => c.data.slice(0, 7) === mes),
-    [cultos, mes],
-  );
+  const linhas = useMemo(() => cultos.filter((c) => c.data.slice(0, 7) === mes), [cultos, mes]);
   const colunas = useMemo(
     () => (depto ? funcoes.filter((f) => f.departamento_id === depto) : funcoes),
     [funcoes, depto],
@@ -130,15 +127,20 @@ function EscalaPage() {
         className="rise overflow-hidden rounded-xl border border-line bg-surface"
         style={{ animationDelay: "120ms" }}
       >
-        <div className="overflow-x-auto [scrollbar-width:auto]">
+        <div className="max-h-[calc(100vh-12rem)] overflow-auto [scrollbar-width:auto]">
           <table className="w-max min-w-full border-collapse text-[13px]">
             <thead>
               <tr className="text-left">
-                <th className="label-mono sticky left-0 z-10 bg-surface px-4 py-3">Culto</th>
+                <th className="label-mono sticky top-0 left-0 z-30 bg-surface px-4 py-3 shadow-[0_1px_0_0_var(--line)]">
+                  Culto
+                </th>
                 {colunas.map((f) => {
                   const c = cor(deptoDe(f.id)?.cor);
                   return (
-                    <th key={f.id} className="label-mono px-4 py-3 whitespace-nowrap">
+                    <th
+                      key={f.id}
+                      className="label-mono sticky top-0 z-20 bg-surface px-4 py-3 whitespace-nowrap shadow-[0_1px_0_0_var(--line)]"
+                    >
                       <span className="flex items-center gap-2">
                         <span className={`size-2 rounded-full ${c.dot}`} />
                         {f.nome}

@@ -1,8 +1,10 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
+import { salvarTelefone } from "@/lib/conta.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -22,18 +24,55 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+const campo =
+  "mt-1.5 w-full rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50";
+
 function AuthPage() {
   const router = useRouter();
   const [modo, setModo] = useState<"entrar" | "criar">("entrar");
+  const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [celular, setCelular] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const enviarTelefone = useServerFn(salvarTelefone);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) router.navigate({ to: "/escala" });
     });
   }, [router]);
+
+  async function criarConta() {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: senha,
+      // A trigger do banco lê full_name para preencher o nome em `pessoas`.
+      options: { data: { full_name: nome.trim(), telefone: celular.trim() } },
+    });
+    if (error) throw error;
+
+    // Sem confirmação de e-mail o Supabase já devolve a sessão. Se ela não vier,
+    // a confirmação continua ligada no painel e a conta fica pendente.
+    if (!data.session) {
+      toast.info("Conta criada. Confirme o e-mail para poder entrar.");
+      setModo("entrar");
+      return;
+    }
+
+    if (celular.trim()) {
+      try {
+        await enviarTelefone({ data: { telefone: celular.trim() } });
+      } catch {
+        toast.warning(
+          "Conta criada, mas o celular não foi salvo. Peça para atualizarem em Voluntários.",
+        );
+      }
+    }
+
+    toast.success("Conta criada.");
+    router.navigate({ to: "/escala" });
+  }
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -44,14 +83,7 @@ function AuthPage() {
         if (error) throw error;
         router.navigate({ to: "/escala" });
       } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password: senha,
-          options: { emailRedirectTo: `${window.location.origin}/escala` },
-        });
-        if (error) throw error;
-        toast.success("Conta criada. Confirme o e-mail se for solicitado.");
-        router.navigate({ to: "/escala" });
+        await criarConta();
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Não foi possível continuar.");
@@ -72,6 +104,20 @@ function AuthPage() {
         </h1>
 
         <form onSubmit={enviar} className="mt-6 space-y-4 text-[13px]">
+          {modo === "criar" ? (
+            <label className="block">
+              <span className="label-mono">Nome completo</span>
+              <input
+                type="text"
+                required
+                autoComplete="name"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                className={campo}
+              />
+            </label>
+          ) : null}
+
           <label className="block">
             <span className="label-mono">E-mail</span>
             <input
@@ -79,9 +125,25 @@ function AuthPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1.5 w-full rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50"
+              className={campo}
             />
           </label>
+
+          {modo === "criar" ? (
+            <label className="block">
+              <span className="label-mono">Celular</span>
+              <input
+                type="tel"
+                required
+                inputMode="tel"
+                placeholder="(27) 99999-0000"
+                value={celular}
+                onChange={(e) => setCelular(e.target.value)}
+                className={campo}
+              />
+            </label>
+          ) : null}
+
           <label className="block">
             <span className="label-mono">Senha</span>
             <input
@@ -90,9 +152,10 @@ function AuthPage() {
               minLength={6}
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
-              className="mt-1.5 w-full rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50"
+              className={campo}
             />
           </label>
+
           <button
             type="submit"
             disabled={carregando}

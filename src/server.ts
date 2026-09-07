@@ -44,9 +44,18 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+// Esta versao do TanStack Start nao expoe rotas de servidor por arquivo, entao o
+// endpoint do cron e atendido aqui, antes de a requisicao chegar ao roteador.
+const ROTA_AVISO_ESCALA = "/api/aviso-escala";
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      if (new URL(request.url).pathname === ROTA_AVISO_ESCALA) {
+        const { responderAvisoEscala } = await import("./lib/aviso-escala.server");
+        return await responderAvisoEscala(request);
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
