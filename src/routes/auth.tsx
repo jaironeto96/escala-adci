@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -61,18 +60,6 @@ function AuthPage() {
     }
   }
 
-  async function google() {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast.error("Não foi possível entrar com o Google.");
-      return;
-    }
-    if (result.redirected) return;
-    router.navigate({ to: "/escala" });
-  }
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-paper px-4 text-ink">
       <div className="rise w-full max-w-sm rounded-xl border border-line bg-surface p-6">
@@ -114,13 +101,6 @@ function AuthPage() {
             {modo === "entrar" ? "Entrar" : "Criar conta"}
           </button>
         </form>
-
-        <button
-          onClick={google}
-          className="mt-3 w-full rounded-md border border-line py-2 text-[13px] text-muted transition-colors hover:text-ink"
-        >
-          Continuar com Google
-        </button>
 
         <button
           onClick={() => setModo(modo === "entrar" ? "criar" : "entrar")}
