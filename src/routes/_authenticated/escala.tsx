@@ -123,8 +123,92 @@ function EscalaPage() {
         </div>
       </section>
 
+      {/* Celular: a grade vira lista. Com muitas funcoes, rolar a tabela de lado
+          espreme os nomes ate ficarem ilegiveis — aqui cada culto e um cartao e
+          o nome ocupa a largura toda. */}
+      <section className="rise space-y-3 md:hidden" style={{ animationDelay: "120ms" }}>
+        {linhas.length === 0 ? (
+          <p className="rounded-xl border border-line bg-surface px-4 py-6 text-[13px] text-muted">
+            Nenhum culto neste mês.
+          </p>
+        ) : (
+          linhas.map((culto) => {
+            const doCulto = colunas
+              .map((f) => ({
+                funcao: f,
+                atribuicoes: escalas.filter((e) => e.culto_id === culto.id && e.funcao_id === f.id),
+              }))
+              // Quem so acompanha nao precisa ver funcao vazia; quem escala precisa,
+              // senao nao tem onde clicar para atribuir.
+              .filter((item) => podeEscalar || item.atribuicoes.length > 0);
+
+            const ehHoje = culto.data === hoje();
+
+            return (
+              <article
+                key={culto.id}
+                className={`overflow-hidden rounded-xl border bg-surface ${
+                  ehHoje ? "border-clay/40" : "border-line"
+                }`}
+              >
+                <header
+                  className={`flex items-baseline justify-between gap-3 border-b border-line px-4 py-3 ${
+                    ehHoje ? "bg-clay/5" : ""
+                  }`}
+                >
+                  <span className={`font-medium ${ehHoje ? "text-clay" : ""}`}>
+                    {dataCurta(culto.data)}
+                  </span>
+                  <span className="text-right font-mono text-[11px] text-muted">
+                    {culto.titulo} · {hora(culto.horario)}
+                  </span>
+                </header>
+
+                {doCulto.length === 0 ? (
+                  <p className="px-4 py-3 font-mono text-[11px] text-muted">
+                    Ninguém escalado ainda.
+                  </p>
+                ) : (
+                  <div className="divide-y divide-line">
+                    {doCulto.map(({ funcao: f, atribuicoes }) => {
+                      const c = cor(deptoDe(f.id)?.cor);
+                      return (
+                        <div key={f.id} className="flex flex-col gap-2 px-4 py-3">
+                          <span className="label-mono flex items-center gap-2">
+                            <span className={`size-2 rounded-full ${c.dot}`} />
+                            {f.nome}
+                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {atribuicoes.map((e) => (
+                              <span
+                                key={e.id}
+                                className="rounded-md bg-surface2 px-2.5 py-1 text-[13px] ring-1 ring-line"
+                              >
+                                {pessoas.find((x) => x.id === e.pessoa_id)?.nome ?? "—"}
+                              </span>
+                            ))}
+                            {podeEscalar ? (
+                              <button
+                                onClick={() => setAlvo({ cultoId: culto.id, funcaoId: f.id })}
+                                className="rounded-md border border-dashed border-line px-2.5 py-1 text-[13px] text-muted transition-colors hover:border-clay/50 hover:text-clay"
+                              >
+                                {atribuicoes.length > 0 ? "+" : "Atribuir"}
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </article>
+            );
+          })
+        )}
+      </section>
+
       <section
-        className="rise overflow-hidden rounded-xl border border-line bg-surface"
+        className="rise hidden overflow-hidden rounded-xl border border-line bg-surface md:block"
         style={{ animationDelay: "120ms" }}
       >
         <div className="max-h-[calc(100vh-12rem)] overflow-auto [scrollbar-width:auto]">
