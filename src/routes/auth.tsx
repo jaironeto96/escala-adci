@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { salvarTelefone } from "@/lib/conta.functions";
 
-export const Route = createFileRoute("/login")({
+export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Entrar · Escala de cultos" },
