@@ -157,15 +157,18 @@ function EscalaPage() {
                   ehHoje ? "border-clay/40" : "border-line"
                 }`}
               >
+                {/* Empilhado, nao lado a lado: em tela estreita um titulo longo
+                    empurrava a data e o horario para a linha de baixo, quebrando
+                    "Qui 10" no meio. Cada informacao ganha a sua linha. */}
                 <header
-                  className={`flex items-baseline justify-between gap-3 border-b border-line px-4 py-3 ${
+                  className={`flex flex-col gap-0.5 border-b border-line px-4 py-3 ${
                     ehHoje ? "bg-clay/5" : ""
                   }`}
                 >
                   <span className={`font-medium ${ehHoje ? "text-clay" : ""}`}>
                     {dataCurta(culto.data)}
                   </span>
-                  <span className="text-right font-mono text-[11px] text-muted">
+                  <span className="font-mono text-[11px] text-muted">
                     {culto.titulo} · {hora(culto.horario)}
                   </span>
                 </header>
