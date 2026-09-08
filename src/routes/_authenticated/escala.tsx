@@ -105,21 +105,27 @@ function EscalaPage() {
               ›
             </button>
           </div>
-          <button
-            onClick={() => navigate({ search: {} })}
-            className={`rounded-full border border-line px-3 py-1 font-mono text-[11px] ${depto ? "text-muted" : "text-ink"}`}
-          >
-            Todos
-          </button>
-          {departamentos.map((d) => (
-            <button
-              key={d.id}
-              onClick={() => navigate({ search: { depto: d.id } })}
-              className={`rounded-full border border-line px-3 py-1 font-mono text-[11px] ${depto === d.id ? cor(d.cor).text : "text-muted"}`}
-            >
-              {d.nome}
-            </button>
-          ))}
+          {/* Para quem escala, o atalho de trocar de ministerio sem sair da tela.
+              O visualizador ja tem os ministerios no menu — aqui viravam duplicata. */}
+          {podeEscalar ? (
+            <>
+              <button
+                onClick={() => navigate({ search: {} })}
+                className={`rounded-full border border-line px-3 py-1 font-mono text-[11px] ${depto ? "text-muted" : "text-ink"}`}
+              >
+                Todos
+              </button>
+              {departamentos.map((d) => (
+                <button
+                  key={d.id}
+                  onClick={() => navigate({ search: { depto: d.id } })}
+                  className={`rounded-full border border-line px-3 py-1 font-mono text-[11px] ${depto === d.id ? cor(d.cor).text : "text-muted"}`}
+                >
+                  {d.nome}
+                </button>
+              ))}
+            </>
+          ) : null}
         </div>
       </section>
 
