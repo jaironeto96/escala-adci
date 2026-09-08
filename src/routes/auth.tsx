@@ -165,12 +165,18 @@ function AuthPage() {
           </button>
         </form>
 
-        <button
-          onClick={() => setModo(modo === "entrar" ? "criar" : "entrar")}
-          className="mt-5 w-full font-mono text-[11px] text-muted transition-colors hover:text-ink"
-        >
-          {modo === "entrar" ? "Não tenho acesso ainda" : "Já tenho conta"}
-        </button>
+        <div className="mt-6 border-t border-line pt-5">
+          <p className="label-mono text-center">
+            {modo === "entrar" ? "Primeira vez aqui?" : "Já tem acesso?"}
+          </p>
+          <button
+            type="button"
+            onClick={() => setModo(modo === "entrar" ? "criar" : "entrar")}
+            className="mt-3 w-full rounded-md border border-line py-2.5 text-[13px] text-ink transition-colors hover:border-clay/50 hover:text-clay"
+          >
+            {modo === "entrar" ? "Criar acesso" : "Entrar no painel"}
+          </button>
+        </div>
       </div>
     </div>
   );
