@@ -18,7 +18,7 @@ const NAV = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { papel, ehAdmin } = usePapel();
+  const { papel, podeEscalar } = usePapel();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const { data: departamentos = [] } = useQuery(consultas.departamentos());
@@ -29,10 +29,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const proximos = cultos.filter((c) => c.data >= hoje()).slice(0, 3);
   const cultoHoje = cultos.find((c) => c.data === hoje());
 
-  const navItems = [
-    ...NAV,
-    ...(ehAdmin ? [{ to: "/usuarios", label: "Acessos" } as const] : []),
-  ];
+  // Visualizador so acompanha a escala. Quem escala — administrador e moderador —
+  // ve o menu completo. O papel de cada conta passou a ser definido direto no
+  // Supabase, entao a tela de gestao de acesso saiu do menu.
+  const navItems = podeEscalar ? NAV : NAV.filter((item) => item.to === "/escala");
 
   async function sair() {
     setMenuOpen(false);
@@ -64,7 +64,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <div className="ml-auto flex items-center gap-4">
             <span className="hidden rounded-full border border-line px-3 py-1 font-mono text-[11px] text-muted sm:inline">
-              {papel === "admin" ? "Administrador" : papel === "moderador" ? "Moderador" : "Visualizador"}
+              {papel === "admin"
+                ? "Administrador"
+                : papel === "moderador"
+                  ? "Moderador"
+                  : "Visualizador"}
             </span>
             {cultoHoje ? (
               <div className="hidden items-center gap-2 rounded-md border border-line px-3 py-2 lg:flex">
@@ -96,13 +100,17 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div
           className={cn(
             "absolute left-0 right-0 top-full border-b border-line bg-paper md:hidden",
-            menuOpen ? "block" : "hidden"
+            menuOpen ? "block" : "hidden",
           )}
         >
           <div className="mx-auto max-w-[1440px] px-6 py-4">
             <div className="mb-3 flex items-center gap-3 sm:hidden">
               <span className="rounded-full border border-line px-3 py-1 font-mono text-[11px] text-muted">
-                {papel === "admin" ? "Administrador" : papel === "moderador" ? "Moderador" : "Visualizador"}
+                {papel === "admin"
+                  ? "Administrador"
+                  : papel === "moderador"
+                    ? "Moderador"
+                    : "Visualizador"}
               </span>
               {cultoHoje ? (
                 <span className="flex items-center gap-2 font-mono text-[11px] text-muted">
