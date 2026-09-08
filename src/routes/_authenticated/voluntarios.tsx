@@ -6,10 +6,10 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { consultas, cor, iniciais, type Pessoa } from "@/lib/dados";
 import { usePapel } from "@/hooks/usePapel";
-import { exigirPodeEscalar } from "@/lib/guardas";
+import { exigirAdmin } from "@/lib/guardas";
 
 export const Route = createFileRoute("/_authenticated/voluntarios")({
-  beforeLoad: exigirPodeEscalar,
+  beforeLoad: exigirAdmin,
 
   head: () => ({
     meta: [

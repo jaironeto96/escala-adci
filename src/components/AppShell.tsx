@@ -9,16 +9,22 @@ import { consultas, cor, dataCurta, hoje, hora } from "@/lib/dados";
 import { usePapel } from "@/hooks/usePapel";
 import { cn } from "@/lib/utils";
 
+// Tres niveis de acesso:
+//   todos     — visualizador acompanha a escala e nada mais
+//   escalar   — moderador monta a agenda de cultos e atribui pessoas
+//   admin     — Jairo cadastra voluntarios e liga cada um as funcoes do
+//               departamento; e esse vinculo que faz o nome aparecer no
+//               "Atribuir" da escala
 const NAV = [
-  { to: "/escala", label: "Escala" },
-  { to: "/cultos", label: "Próximos cultos" },
-  { to: "/voluntarios", label: "Voluntários" },
-  { to: "/departamentos", label: "Departamentos" },
+  { to: "/escala", label: "Escala", nivel: "todos" },
+  { to: "/cultos", label: "Próximos cultos", nivel: "escalar" },
+  { to: "/voluntarios", label: "Voluntários", nivel: "admin" },
+  { to: "/departamentos", label: "Departamentos", nivel: "admin" },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { papel, podeEscalar } = usePapel();
+  const { papel, podeEscalar, ehAdmin } = usePapel();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const { data: departamentos = [] } = useQuery(consultas.departamentos());
@@ -29,10 +35,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const proximos = cultos.filter((c) => c.data >= hoje()).slice(0, 3);
   const cultoHoje = cultos.find((c) => c.data === hoje());
 
-  // Visualizador so acompanha a escala. Quem escala — administrador e moderador —
-  // ve o menu completo. O papel de cada conta passou a ser definido direto no
-  // Supabase, entao a tela de gestao de acesso saiu do menu.
-  const navItems = podeEscalar ? NAV : NAV.filter((item) => item.to === "/escala");
+  // O papel de cada conta se define direto no Supabase, entao nao ha mais uma
+  // tela de gestao de acesso no menu.
+  const navItems = NAV.filter(
+    (item) =>
+      item.nivel === "todos" ||
+      (item.nivel === "escalar" && podeEscalar) ||
+      (item.nivel === "admin" && ehAdmin),
+  );
 
   async function sair() {
     setMenuOpen(false);
