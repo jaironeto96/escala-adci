@@ -64,6 +64,9 @@ function EscalaPage() {
     [funcoes, depto],
   );
 
+  // O ministerio escolhido no menu ou nos filtros. Sem ele, a grade mostra tudo.
+  const deptoAtual = departamentos.find((d) => d.id === depto);
+
   const deptoDe = (funcaoId: string) => {
     const f = funcoes.find((x) => x.id === funcaoId);
     return departamentos.find((d) => d.id === f?.departamento_id);
@@ -87,7 +90,14 @@ function EscalaPage() {
           <h1 className="text-balance font-display text-5xl font-light leading-[1.02] tracking-tight">
             Escala
           </h1>
-          <p className="label-mono mt-3">{"\n"}</p>
+          {deptoAtual ? (
+            <p className="label-mono mt-3 flex items-center gap-2">
+              <span className={`size-2 rounded-full ${cor(deptoAtual.cor).dot}`} />
+              {deptoAtual.nome}
+            </p>
+          ) : (
+            <p className="label-mono mt-3">Todos os ministérios</p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1 rounded-full border border-line px-1 py-0.5">
