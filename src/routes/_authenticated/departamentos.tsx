@@ -6,8 +6,11 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { consultas, cor, CORES_DISPONIVEIS } from "@/lib/dados";
 import { usePapel } from "@/hooks/usePapel";
+import { exigirPodeEscalar } from "@/lib/guardas";
 
 export const Route = createFileRoute("/_authenticated/departamentos")({
+  beforeLoad: exigirPodeEscalar,
+
   head: () => ({
     meta: [
       { title: "Departamentos · Escala de cultos" },
@@ -47,9 +50,7 @@ function DepartamentosPage() {
 
   const criarFuncao = useMutation({
     mutationFn: async ({ deptoId, nome }: { deptoId: string; nome: string }) => {
-      const { error } = await supabase
-        .from("funcoes")
-        .insert({ departamento_id: deptoId, nome });
+      const { error } = await supabase.from("funcoes").insert({ departamento_id: deptoId, nome });
       if (error) throw error;
     },
     onSuccess: (_d, v) => {
@@ -86,47 +87,46 @@ function DepartamentosPage() {
       </section>
 
       {ehAdmin ? (
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          criarDepto.mutate();
-        }}
-        className="rise mb-8 flex flex-wrap items-end gap-3 rounded-xl border border-line bg-surface p-5 text-[13px]"
-        style={{ animationDelay: "120ms" }}
-      >
-        <label className="min-w-[200px] flex-1">
-          <span className="label-mono">Novo departamento</span>
-          <input
-            required
-            value={novo.nome}
-            onChange={(e) => setNovo({ ...novo, nome: e.target.value })}
-            placeholder="Intercessão"
-            className="mt-1.5 w-full rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50"
-          />
-        </label>
-        <div>
-          <span className="label-mono">Cor</span>
-          <div className="mt-1.5 flex gap-1.5">
-            {CORES_DISPONIVEIS.map((c) => (
-              <button
-                type="button"
-                key={c}
-                onClick={() => setNovo({ ...novo, cor: c })}
-                className={`size-7 rounded-full ${cor(c).dot} ${novo.cor === c ? "ring-2 ring-ink/40" : "opacity-60"}`}
-                aria-label={c}
-              />
-            ))}
-          </div>
-        </div>
-        <button
-          type="submit"
-          className="rounded-md bg-clay px-4 py-2 font-medium text-paper transition-colors hover:bg-clay/85"
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            criarDepto.mutate();
+          }}
+          className="rise mb-8 flex flex-wrap items-end gap-3 rounded-xl border border-line bg-surface p-5 text-[13px]"
+          style={{ animationDelay: "120ms" }}
         >
-          Adicionar
-        </button>
-      </form>
+          <label className="min-w-[200px] flex-1">
+            <span className="label-mono">Novo departamento</span>
+            <input
+              required
+              value={novo.nome}
+              onChange={(e) => setNovo({ ...novo, nome: e.target.value })}
+              placeholder="Intercessão"
+              className="mt-1.5 w-full rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50"
+            />
+          </label>
+          <div>
+            <span className="label-mono">Cor</span>
+            <div className="mt-1.5 flex gap-1.5">
+              {CORES_DISPONIVEIS.map((c) => (
+                <button
+                  type="button"
+                  key={c}
+                  onClick={() => setNovo({ ...novo, cor: c })}
+                  className={`size-7 rounded-full ${cor(c).dot} ${novo.cor === c ? "ring-2 ring-ink/40" : "opacity-60"}`}
+                  aria-label={c}
+                />
+              ))}
+            </div>
+          </div>
+          <button
+            type="submit"
+            className="rounded-md bg-clay px-4 py-2 font-medium text-paper transition-colors hover:bg-clay/85"
+          >
+            Adicionar
+          </button>
+        </form>
       ) : null}
-
 
       <section className="rise grid gap-3 md:grid-cols-2" style={{ animationDelay: "180ms" }}>
         {departamentos.map((d) => {
@@ -169,27 +169,27 @@ function DepartamentosPage() {
               </div>
 
               {ehAdmin ? (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const nome = (novaFuncao[d.id] ?? "").trim();
-                  if (nome) criarFuncao.mutate({ deptoId: d.id, nome });
-                }}
-                className="mt-4 flex gap-2 text-[13px]"
-              >
-                <input
-                  value={novaFuncao[d.id] ?? ""}
-                  onChange={(e) => setNovaFuncao((s) => ({ ...s, [d.id]: e.target.value }))}
-                  placeholder="Nova função"
-                  className="flex-1 rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50"
-                />
-                <button
-                  type="submit"
-                  className="rounded-md border border-line px-3 py-2 text-muted transition-colors hover:text-ink"
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const nome = (novaFuncao[d.id] ?? "").trim();
+                    if (nome) criarFuncao.mutate({ deptoId: d.id, nome });
+                  }}
+                  className="mt-4 flex gap-2 text-[13px]"
                 >
-                  Adicionar
-                </button>
-              </form>
+                  <input
+                    value={novaFuncao[d.id] ?? ""}
+                    onChange={(e) => setNovaFuncao((s) => ({ ...s, [d.id]: e.target.value }))}
+                    placeholder="Nova função"
+                    className="flex-1 rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-md border border-line px-3 py-2 text-muted transition-colors hover:text-ink"
+                  >
+                    Adicionar
+                  </button>
+                </form>
               ) : null}
             </div>
           );

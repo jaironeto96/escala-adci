@@ -6,8 +6,11 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { consultas, cor, iniciais, type Pessoa } from "@/lib/dados";
 import { usePapel } from "@/hooks/usePapel";
+import { exigirPodeEscalar } from "@/lib/guardas";
 
 export const Route = createFileRoute("/_authenticated/voluntarios")({
+  beforeLoad: exigirPodeEscalar,
+
   head: () => ({
     meta: [
       { title: "Voluntários · Escala de cultos" },
@@ -261,7 +264,9 @@ function VoluntariosPage() {
                         key={f.id}
                         onClick={() => alternar(funcoesSel, setFuncoesSel, f.id)}
                         className={`rounded-full px-2.5 py-1 text-[11px] ring-1 transition-colors ${
-                          on ? "bg-clay/12 text-clay ring-clay/25" : "bg-surface2 text-muted ring-line"
+                          on
+                            ? "bg-clay/12 text-clay ring-clay/25"
+                            : "bg-surface2 text-muted ring-line"
                         }`}
                       >
                         {f.nome}

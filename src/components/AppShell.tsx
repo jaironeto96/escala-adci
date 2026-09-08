@@ -143,52 +143,59 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      <div className="mx-auto grid max-w-[1440px] grid-cols-1 gap-8 px-6 py-8 lg:grid-cols-[200px_minmax(0,1fr)]">
-        <aside className="rise hidden lg:block">
-          <div className="label-mono mb-3">Departamentos</div>
-          <div className="space-y-0.5 text-[13px]">
-            {departamentos.map((d) => {
-              const c = cor(d.cor);
-              const total = pessoaDeptos.filter((p) => p.departamento_id === d.id).length;
-              return (
-                <Link
-                  key={d.id}
-                  to="/escala"
-                  search={{ depto: d.id }}
-                  className="flex items-center justify-between rounded-md px-3 py-2 text-muted transition-colors hover:bg-surface"
-                  activeOptions={{ includeSearch: true }}
-                  activeProps={{ className: "bg-surface2 text-ink" }}
-                >
-                  <span className="flex items-center gap-2">
-                    <span className={`size-2 rounded-full ${c.dot}`} />
-                    {d.nome}
-                  </span>
-                  <span className="font-mono text-[11px] text-muted">{total}</span>
-                </Link>
-              );
-            })}
-          </div>
-
-          <div className="mt-8 rounded-lg border border-line p-4">
-            <div className="label-mono mb-3">Próximos cultos</div>
-            <div className="space-y-3 text-[13px]">
-              {proximos.length === 0 ? (
-                <p className="text-muted">Nenhum culto agendado.</p>
-              ) : (
-                proximos.map((c) => (
-                  <div key={c.id} className="flex items-start justify-between gap-2">
-                    <span className="font-medium">
-                      {dataCurta(c.data)} · {c.titulo}
+      <div
+        className={cn(
+          "mx-auto grid max-w-[1440px] grid-cols-1 gap-8 px-6 py-8",
+          podeEscalar && "lg:grid-cols-[200px_minmax(0,1fr)]",
+        )}
+      >
+        {podeEscalar ? (
+          <aside className="rise hidden lg:block">
+            <div className="label-mono mb-3">Departamentos</div>
+            <div className="space-y-0.5 text-[13px]">
+              {departamentos.map((d) => {
+                const c = cor(d.cor);
+                const total = pessoaDeptos.filter((p) => p.departamento_id === d.id).length;
+                return (
+                  <Link
+                    key={d.id}
+                    to="/escala"
+                    search={{ depto: d.id }}
+                    className="flex items-center justify-between rounded-md px-3 py-2 text-muted transition-colors hover:bg-surface"
+                    activeOptions={{ includeSearch: true }}
+                    activeProps={{ className: "bg-surface2 text-ink" }}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className={`size-2 rounded-full ${c.dot}`} />
+                      {d.nome}
                     </span>
-                    <span className="shrink-0 font-mono text-[11px] text-clay">
-                      {escalas.filter((e) => e.culto_id === c.id).length}
-                    </span>
-                  </div>
-                ))
-              )}
+                    <span className="font-mono text-[11px] text-muted">{total}</span>
+                  </Link>
+                );
+              })}
             </div>
-          </div>
-        </aside>
+
+            <div className="mt-8 rounded-lg border border-line p-4">
+              <div className="label-mono mb-3">Próximos cultos</div>
+              <div className="space-y-3 text-[13px]">
+                {proximos.length === 0 ? (
+                  <p className="text-muted">Nenhum culto agendado.</p>
+                ) : (
+                  proximos.map((c) => (
+                    <div key={c.id} className="flex items-start justify-between gap-2">
+                      <span className="font-medium">
+                        {dataCurta(c.data)} · {c.titulo}
+                      </span>
+                      <span className="shrink-0 font-mono text-[11px] text-clay">
+                        {escalas.filter((e) => e.culto_id === c.id).length}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </aside>
+        ) : null}
 
         <main className="min-w-0">{children}</main>
       </div>

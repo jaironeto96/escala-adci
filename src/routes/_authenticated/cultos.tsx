@@ -14,12 +14,14 @@ import {
   MODELOS_RECORRENTES,
 } from "@/lib/dados";
 import { usePapel } from "@/hooks/usePapel";
+import { exigirPodeEscalar } from "@/lib/guardas";
 import { AtribuirModal } from "@/components/AtribuirModal";
 
 const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-
 export const Route = createFileRoute("/_authenticated/cultos")({
+  beforeLoad: exigirPodeEscalar,
+
   head: () => ({
     meta: [
       { title: "Cultos · Escala de cultos" },
@@ -56,7 +58,6 @@ function CultosPage() {
     [cultos, dias],
   );
 
-
   const gerar = useMutation({
     mutationFn: async () => {
       const previstos = gerarRecorrentes(semanas);
@@ -77,7 +78,6 @@ function CultosPage() {
     },
     onError: () => toast.error("Não foi possível gerar os cultos."),
   });
-
 
   const criar = useMutation({
     mutationFn: async () => {
@@ -129,82 +129,84 @@ function CultosPage() {
           ))}
         </ul>
         {ehAdmin ? (
-        <div className="mt-5 flex flex-wrap items-end gap-3 text-[13px]">
-          <label>
-            <span className="label-mono">Gerar para as próximas</span>
-            <select
-              value={semanas}
-              onChange={(e) => setSemanas(Number(e.target.value))}
-              className="mt-1.5 block rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50"
+          <div className="mt-5 flex flex-wrap items-end gap-3 text-[13px]">
+            <label>
+              <span className="label-mono">Gerar para as próximas</span>
+              <select
+                value={semanas}
+                onChange={(e) => setSemanas(Number(e.target.value))}
+                className="mt-1.5 block rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50"
+              >
+                {[4, 8, 12, 26, 52].map((n) => (
+                  <option key={n} value={n}>
+                    {n} semanas
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              onClick={() => gerar.mutate()}
+              disabled={gerar.isPending}
+              className="rounded-md border border-clay/40 px-4 py-2 font-medium text-clay transition-colors hover:bg-clay/10 disabled:opacity-50"
             >
-              {[4, 8, 12, 26, 52].map((n) => (
-                <option key={n} value={n}>
-                  {n} semanas
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            onClick={() => gerar.mutate()}
-            disabled={gerar.isPending}
-            className="rounded-md border border-clay/40 px-4 py-2 font-medium text-clay transition-colors hover:bg-clay/10 disabled:opacity-50"
-          >
-            Gerar agenda recorrente
-          </button>
-        </div>
+              Gerar agenda recorrente
+            </button>
+          </div>
         ) : null}
       </section>
 
       {ehAdmin ? (
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          criar.mutate();
-
-        }}
-        className="rise mb-8 flex flex-wrap items-end gap-3 rounded-xl border border-line bg-surface p-5 text-[13px]"
-        style={{ animationDelay: "120ms" }}
-      >
-        <label className="min-w-[200px] flex-1">
-          <span className="label-mono">Título</span>
-          <input
-            required
-            value={form.titulo}
-            onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-            placeholder="Culto de Celebração"
-            className="mt-1.5 w-full rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50"
-          />
-        </label>
-        <label>
-          <span className="label-mono">Data</span>
-          <input
-            type="date"
-            required
-            value={form.data}
-            onChange={(e) => setForm({ ...form, data: e.target.value })}
-            className="mt-1.5 rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50"
-          />
-        </label>
-        <label>
-          <span className="label-mono">Horário</span>
-          <input
-            type="time"
-            required
-            value={form.horario}
-            onChange={(e) => setForm({ ...form, horario: e.target.value })}
-            className="mt-1.5 rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50"
-          />
-        </label>
-        <button
-          type="submit"
-          className="rounded-md bg-clay px-4 py-2 font-medium text-paper transition-colors hover:bg-clay/85"
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            criar.mutate();
+          }}
+          className="rise mb-8 flex flex-wrap items-end gap-3 rounded-xl border border-line bg-surface p-5 text-[13px]"
+          style={{ animationDelay: "120ms" }}
         >
-          Adicionar culto
-        </button>
-      </form>
+          <label className="min-w-[200px] flex-1">
+            <span className="label-mono">Título</span>
+            <input
+              required
+              value={form.titulo}
+              onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+              placeholder="Culto de Celebração"
+              className="mt-1.5 w-full rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50"
+            />
+          </label>
+          <label>
+            <span className="label-mono">Data</span>
+            <input
+              type="date"
+              required
+              value={form.data}
+              onChange={(e) => setForm({ ...form, data: e.target.value })}
+              className="mt-1.5 rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50"
+            />
+          </label>
+          <label>
+            <span className="label-mono">Horário</span>
+            <input
+              type="time"
+              required
+              value={form.horario}
+              onChange={(e) => setForm({ ...form, horario: e.target.value })}
+              className="mt-1.5 rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50"
+            />
+          </label>
+          <button
+            type="submit"
+            className="rounded-md bg-clay px-4 py-2 font-medium text-paper transition-colors hover:bg-clay/85"
+          >
+            Adicionar culto
+          </button>
+        </form>
       ) : null}
 
-      <section className="rise mb-4 flex flex-wrap items-center gap-2" style={{ animationDelay: "150ms" }}>
+      <section
+        className="rise mb-4 flex flex-wrap items-center gap-2"
+        style={{ animationDelay: "150ms" }}
+      >
         <span className="label-mono">Dias</span>
         <button
           onClick={() => setDias([])}
@@ -216,9 +218,7 @@ function CultosPage() {
           <button
             key={d}
             onClick={() =>
-              setDias((atual) =>
-                atual.includes(i) ? atual.filter((x) => x !== i) : [...atual, i],
-              )
+              setDias((atual) => (atual.includes(i) ? atual.filter((x) => x !== i) : [...atual, i]))
             }
             className={`rounded-full border px-3 py-1 font-mono text-[11px] ${dias.includes(i) ? "border-clay/50 text-clay" : "border-line text-muted"}`}
           >
@@ -244,25 +244,21 @@ function CultosPage() {
                     {doCulto.length} escalados
                   </span>
                   {ehAdmin ? (
-                  <button
-                    onClick={() => excluir.mutate(c.id)}
-                    className="font-mono text-[11px] text-muted transition-colors hover:text-clay"
-                  >
-                    Excluir
-                  </button>
+                    <button
+                      onClick={() => excluir.mutate(c.id)}
+                      className="font-mono text-[11px] text-muted transition-colors hover:text-clay"
+                    >
+                      Excluir
+                    </button>
                   ) : null}
                 </div>
-
               </div>
               <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {funcoes.map((f) => {
                   const d = departamentos.find((x) => x.id === f.departamento_id);
                   const naFuncao = doCulto.filter((e) => e.funcao_id === f.id);
                   return (
-                    <div
-                      key={f.id}
-                      className="rounded-lg border border-line bg-surface2 px-3 py-2"
-                    >
+                    <div key={f.id} className="rounded-lg border border-line bg-surface2 px-3 py-2">
                       <div className="flex items-center gap-2 font-mono text-[11px] text-muted">
                         <span className={`size-2 rounded-full ${cor(d?.cor).dot}`} />
                         {f.nome}
@@ -303,7 +299,6 @@ function CultosPage() {
           onClose={() => setAlvo(null)}
         />
       ) : null}
-
     </>
   );
 }
