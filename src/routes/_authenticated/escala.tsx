@@ -4,13 +4,17 @@ import { useMemo, useState } from "react";
 
 import { consultas, cor, dataCurta, hoje, hora } from "@/lib/dados";
 import { usePapel } from "@/hooks/usePapel";
+import { useMinhaPessoa } from "@/hooks/useMinhaPessoa";
 import { AtribuirModal } from "@/components/AtribuirModal";
 
-type Busca = { depto?: string | undefined };
+type Busca = { depto?: string | undefined; minha?: boolean | undefined };
 
 export const Route = createFileRoute("/_authenticated/escala")({
-  validateSearch: (search: Record<string, unknown>): Busca =>
-    typeof search["depto"] === "string" ? { depto: search["depto"] } : {},
+  validateSearch: (search: Record<string, unknown>): Busca => ({
+    ...(typeof search["depto"] === "string" ? { depto: search["depto"] } : {}),
+    // O link chega como booleano, mas colado na barra de enderecos vira string.
+    ...(search["minha"] === true || search["minha"] === "true" ? { minha: true } : {}),
+  }),
 
   head: () => ({
     meta: [
@@ -48,9 +52,9 @@ const MESES = [
 ];
 
 function EscalaPage() {
-  const { depto } = Route.useSearch();
-  const navigate = Route.useNavigate();
-  const { podeEscalar, ehAdmin } = usePapel();
+  const { depto, minha } = Route.useSearch();
+  const { podeEscalar } = usePapel();
+  const { pessoaId } = useMinhaPessoa();
 
   const { data: departamentos = [] } = useQuery(consultas.departamentos());
   const { data: funcoes = [] } = useQuery(consultas.funcoes());
@@ -64,11 +68,26 @@ function EscalaPage() {
     return atual < MES_MINIMO ? MES_MINIMO : atual;
   });
 
-  const linhas = useMemo(() => cultos.filter((c) => c.data.slice(0, 7) === mes), [cultos, mes]);
-  const colunas = useMemo(
-    () => (depto ? funcoes.filter((f) => f.departamento_id === depto) : funcoes),
-    [funcoes, depto],
+  const minhasEscalas = useMemo(
+    () => (pessoaId ? escalas.filter((e) => e.pessoa_id === pessoaId) : []),
+    [escalas, pessoaId],
   );
+
+  // Em "Minha escala" a grade encolhe duas vezes: so os cultos em que a pessoa
+  // aparece, e dentro deles so as funcoes que ela exerce.
+  const linhas = useMemo(() => {
+    const doMes = cultos.filter((c) => c.data.slice(0, 7) === mes);
+    if (!minha) return doMes;
+    const meus = new Set(minhasEscalas.map((e) => e.culto_id));
+    return doMes.filter((c) => meus.has(c.id));
+  }, [cultos, mes, minha, minhasEscalas]);
+
+  const colunas = useMemo(() => {
+    const doDepto = depto ? funcoes.filter((f) => f.departamento_id === depto) : funcoes;
+    if (!minha) return doDepto;
+    const minhas = new Set(minhasEscalas.map((e) => e.funcao_id));
+    return doDepto.filter((f) => minhas.has(f.id));
+  }, [funcoes, depto, minha, minhasEscalas]);
 
   // O ministerio escolhido no menu ou nos filtros. Sem ele, a grade mostra tudo.
   const deptoAtual = departamentos.find((d) => d.id === depto);
@@ -98,7 +117,9 @@ function EscalaPage() {
           <h1 className="text-balance font-display text-5xl font-light leading-[1.02] tracking-tight">
             Escala
           </h1>
-          {deptoAtual ? (
+          {minha ? (
+            <p className="label-mono mt-3">Minha escala</p>
+          ) : deptoAtual ? (
             <p className="label-mono mt-3 flex items-center gap-2">
               <span className={`size-2 rounded-full ${cor(deptoAtual.cor).dot}`} />
               {deptoAtual.nome}
@@ -124,28 +145,6 @@ function EscalaPage() {
               ›
             </button>
           </div>
-          {/* Todos os papeis ja tem os ministerios no menu, entao estes botoes
-              duplicam a navegacao. Ficam so para o administrador, que alterna entre
-              eles com mais frequencia enquanto organiza a escala. */}
-          {ehAdmin ? (
-            <>
-              <button
-                onClick={() => navigate({ search: {} })}
-                className={`rounded-full border border-line px-3 py-1 font-mono text-[11px] ${depto ? "text-muted" : "text-ink"}`}
-              >
-                Todos
-              </button>
-              {departamentos.map((d) => (
-                <button
-                  key={d.id}
-                  onClick={() => navigate({ search: { depto: d.id } })}
-                  className={`rounded-full border border-line px-3 py-1 font-mono text-[11px] ${depto === d.id ? cor(d.cor).text : "text-muted"}`}
-                >
-                  {d.nome}
-                </button>
-              ))}
-            </>
-          ) : null}
         </div>
       </section>
 
@@ -155,7 +154,7 @@ function EscalaPage() {
       <section className="rise space-y-3 md:hidden" style={{ animationDelay: "120ms" }}>
         {linhas.length === 0 ? (
           <p className="rounded-xl border border-line bg-surface px-4 py-6 text-[13px] text-muted">
-            Nenhum culto neste mês.
+            {minha ? "Você não está escalado neste mês." : "Nenhum culto neste mês."}
           </p>
         ) : (
           linhas.map((culto) => {
@@ -267,7 +266,7 @@ function EscalaPage() {
               {linhas.length === 0 ? (
                 <tr>
                   <td className="px-4 py-6 text-muted" colSpan={colunas.length + 1}>
-                    Nenhum culto neste mês.
+                    {minha ? "Você não está escalado neste mês." : "Nenhum culto neste mês."}
                   </td>
                 </tr>
               ) : (

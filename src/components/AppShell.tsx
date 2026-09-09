@@ -61,6 +61,16 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <nav className="hidden items-center gap-6 text-[13px] md:flex">
+            <Link
+              to="/escala"
+              search={{ minha: true }}
+              activeOptions={{ includeSearch: true }}
+              className="rounded-full border border-clay/40 bg-clay/10 px-3 py-1 font-medium text-clay transition-colors hover:bg-clay/20"
+              activeProps={{ className: "bg-clay/25" }}
+            >
+              Minha escala
+            </Link>
+            <span aria-hidden="true" className="h-4 w-px bg-line" />
             {departamentos.map((d) => (
               <Link
                 key={d.id}
@@ -138,6 +148,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
 
             <nav className="flex flex-col gap-1">
+              <Link
+                to="/escala"
+                search={{ minha: true }}
+                activeOptions={{ includeSearch: true }}
+                onClick={() => setMenuOpen(false)}
+                className="rounded-md border border-clay/40 bg-clay/10 px-3 py-2.5 text-[14px] font-medium text-clay transition-colors hover:bg-clay/20"
+                activeProps={{ className: "bg-clay/25" }}
+              >
+                Minha escala
+              </Link>
+              <div aria-hidden="true" className="my-1 border-t border-line" />
               {departamentos.map((d) => (
                 <Link
                   key={d.id}
