@@ -50,7 +50,7 @@ const MESES = [
 function EscalaPage() {
   const { depto } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const { podeEscalar } = usePapel();
+  const { podeEscalar, ehAdmin } = usePapel();
 
   const { data: departamentos = [] } = useQuery(consultas.departamentos());
   const { data: funcoes = [] } = useQuery(consultas.funcoes());
@@ -124,9 +124,10 @@ function EscalaPage() {
               ›
             </button>
           </div>
-          {/* Para quem escala, o atalho de trocar de ministerio sem sair da tela.
-              O visualizador ja tem os ministerios no menu — aqui viravam duplicata. */}
-          {podeEscalar ? (
+          {/* Todos os papeis ja tem os ministerios no menu, entao estes botoes
+              duplicam a navegacao. Ficam so para o administrador, que alterna entre
+              eles com mais frequencia enquanto organiza a escala. */}
+          {ehAdmin ? (
             <>
               <button
                 onClick={() => navigate({ search: {} })}

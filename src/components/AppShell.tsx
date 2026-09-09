@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 //               departamento; e esse vinculo que faz o nome aparecer no
 //               "Atribuir" da escala
 const NAV = [
-  { to: "/escala", label: "Escala", nivel: "todos" },
   { to: "/cultos", label: "Próximos cultos", nivel: "escalar" },
   { to: "/voluntarios", label: "Voluntários", nivel: "admin" },
   { to: "/departamentos", label: "Departamentos", nivel: "admin" },
@@ -38,17 +37,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   // O papel de cada conta se define direto no Supabase, entao nao ha mais uma
   // tela de gestao de acesso no menu.
   //
-  // Visualizador e moderador nao navegam por telas: o menu deles lista os
-  // ministerios, e cada um abre a escala ja filtrada — Midia, Louvor e Base
-  // separados em vez de tudo na mesma grade. O item generico "Escala" sai porque
-  // os departamentos ocupam o lugar dele. O administrador mantem o menu por telas.
-  const porMinisterio = !ehAdmin;
-
+  // Todos os papeis navegam por ministerio: o menu lista Midia, Louvor e Base, e
+  // cada um abre a escala ja filtrada. Nao existe mais um item generico "Escala" —
+  // os departamentos ocupam esse lugar. As telas de gestao vem depois deles,
+  // conforme o papel.
   const navItems = NAV.filter(
-    (item) =>
-      (item.nivel === "todos" && !porMinisterio) ||
-      (item.nivel === "escalar" && podeEscalar) ||
-      (item.nivel === "admin" && ehAdmin),
+    (item) => (item.nivel === "escalar" && podeEscalar) || (item.nivel === "admin" && ehAdmin),
   );
 
   async function sair() {
@@ -67,20 +61,18 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <nav className="hidden items-center gap-6 text-[13px] md:flex">
-            {porMinisterio
-              ? departamentos.map((d) => (
-                  <Link
-                    key={d.id}
-                    to="/escala"
-                    search={{ depto: d.id }}
-                    activeOptions={{ includeSearch: true }}
-                    className="text-muted transition-colors hover:text-ink"
-                    activeProps={{ className: "text-ink" }}
-                  >
-                    {d.nome}
-                  </Link>
-                ))
-              : null}
+            {departamentos.map((d) => (
+              <Link
+                key={d.id}
+                to="/escala"
+                search={{ depto: d.id }}
+                activeOptions={{ includeSearch: true }}
+                className="text-muted transition-colors hover:text-ink"
+                activeProps={{ className: "text-ink" }}
+              >
+                {d.nome}
+              </Link>
+            ))}
             {navItems.map((item) => (
               <Link
                 key={item.to}
@@ -146,21 +138,19 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
 
             <nav className="flex flex-col gap-1">
-              {porMinisterio
-                ? departamentos.map((d) => (
-                    <Link
-                      key={d.id}
-                      to="/escala"
-                      search={{ depto: d.id }}
-                      activeOptions={{ includeSearch: true }}
-                      onClick={() => setMenuOpen(false)}
-                      className="rounded-md px-3 py-2.5 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink"
-                      activeProps={{ className: "bg-surface2 text-ink" }}
-                    >
-                      {d.nome}
-                    </Link>
-                  ))
-                : null}
+              {departamentos.map((d) => (
+                <Link
+                  key={d.id}
+                  to="/escala"
+                  search={{ depto: d.id }}
+                  activeOptions={{ includeSearch: true }}
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-md px-3 py-2.5 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink"
+                  activeProps={{ className: "bg-surface2 text-ink" }}
+                >
+                  {d.nome}
+                </Link>
+              ))}
               {navItems.map((item) => (
                 <Link
                   key={item.to}
