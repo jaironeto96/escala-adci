@@ -29,6 +29,9 @@ export const Route = createFileRoute("/_authenticated/escala")({
   component: EscalaPage,
 });
 
+// Nada foi cadastrado antes disto, entao nao ha o que ver para tras.
+const MES_MINIMO = "2026-09";
+
 const MESES = [
   "Janeiro",
   "Fevereiro",
@@ -56,7 +59,10 @@ function EscalaPage() {
   const { data: escalas = [] } = useQuery(consultas.escalas());
 
   const [alvo, setAlvo] = useState<{ cultoId: string; funcaoId: string } | null>(null);
-  const [mes, setMes] = useState(() => hoje().slice(0, 7));
+  const [mes, setMes] = useState(() => {
+    const atual = hoje().slice(0, 7);
+    return atual < MES_MINIMO ? MES_MINIMO : atual;
+  });
 
   const linhas = useMemo(() => cultos.filter((c) => c.data.slice(0, 7) === mes), [cultos, mes]);
   const colunas = useMemo(
@@ -75,7 +81,9 @@ function EscalaPage() {
   const mudarMes = (delta: number) => {
     const [a, m] = mes.split("-").map(Number);
     const d = new Date(a!, m! - 1 + delta, 1);
-    setMes(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    const alvo = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    if (alvo < MES_MINIMO) return;
+    setMes(alvo);
   };
 
   const rotuloMes = () => {
@@ -103,7 +111,8 @@ function EscalaPage() {
           <div className="flex items-center gap-1 rounded-full border border-line px-1 py-0.5">
             <button
               onClick={() => mudarMes(-1)}
-              className="rounded-full px-2 py-0.5 font-mono text-[11px] text-muted hover:text-ink"
+              disabled={mes <= MES_MINIMO}
+              className="rounded-full px-2 py-0.5 font-mono text-[11px] text-muted hover:text-ink disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:text-muted"
             >
               ‹
             </button>
@@ -234,7 +243,7 @@ function EscalaPage() {
           <table className="w-max min-w-full border-collapse text-[13px]">
             <thead>
               <tr className="text-left">
-                <th className="label-mono sticky top-0 left-0 z-30 bg-surface px-4 py-3 shadow-[0_1px_0_0_var(--line)]">
+                <th className="sticky top-0 left-0 z-30 font-mono text-[11px] font-medium tracking-[0.12em] uppercase text-ink bg-surface px-4 py-3 shadow-[0_1px_0_0_var(--line)]">
                   Culto
                 </th>
                 {colunas.map((f) => {
@@ -242,7 +251,7 @@ function EscalaPage() {
                   return (
                     <th
                       key={f.id}
-                      className="label-mono sticky top-0 z-20 bg-surface px-4 py-3 whitespace-nowrap shadow-[0_1px_0_0_var(--line)]"
+                      className="sticky top-0 z-20 font-mono text-[11px] font-medium tracking-[0.12em] uppercase text-ink bg-surface px-4 py-3 whitespace-nowrap shadow-[0_1px_0_0_var(--line)]"
                     >
                       <span className="flex items-center gap-2">
                         <span className={`size-2 rounded-full ${c.dot}`} />

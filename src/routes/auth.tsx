@@ -97,7 +97,7 @@ function AuthPage() {
       <div className="rise w-full max-w-sm rounded-xl border border-line bg-surface p-6">
         <div className="flex items-baseline gap-2">
           <span className="font-display text-[22px] font-semibold tracking-tight">ADCI</span>
-          <span className="label-mono border-l border-line pl-2">Ministérios</span>
+          <span className="label-mono border-l border-line pl-2">Escalas</span>
         </div>
         <h1 className="mt-6 font-display text-2xl font-light tracking-tight">
           {modo === "entrar" ? "Entrar no painel" : "Criar acesso"}
