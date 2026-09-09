@@ -38,12 +38,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   // O papel de cada conta se define direto no Supabase, entao nao ha mais uma
   // tela de gestao de acesso no menu.
   //
-  // Visualizador nao navega por telas: o menu dele lista os ministerios, e cada
-  // um abre a escala ja filtrada — ver Midia, Louvor e Base separados em vez de
-  // tudo na mesma grade.
+  // Visualizador e moderador nao navegam por telas: o menu deles lista os
+  // ministerios, e cada um abre a escala ja filtrada — Midia, Louvor e Base
+  // separados em vez de tudo na mesma grade. O item generico "Escala" sai porque
+  // os departamentos ocupam o lugar dele. O administrador mantem o menu por telas.
+  const porMinisterio = !ehAdmin;
+
   const navItems = NAV.filter(
     (item) =>
-      item.nivel === "todos" ||
+      (item.nivel === "todos" && !porMinisterio) ||
       (item.nivel === "escalar" && podeEscalar) ||
       (item.nivel === "admin" && ehAdmin),
   );
@@ -64,18 +67,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <nav className="hidden items-center gap-6 text-[13px] md:flex">
-            {podeEscalar
-              ? navItems.map((item) => (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className="text-muted transition-colors hover:text-ink"
-                    activeProps={{ className: "text-ink" }}
-                  >
-                    {item.label}
-                  </Link>
-                ))
-              : departamentos.map((d) => (
+            {porMinisterio
+              ? departamentos.map((d) => (
                   <Link
                     key={d.id}
                     to="/escala"
@@ -86,7 +79,18 @@ export function AppShell({ children }: { children: ReactNode }) {
                   >
                     {d.nome}
                   </Link>
-                ))}
+                ))
+              : null}
+            {navItems.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="text-muted transition-colors hover:text-ink"
+                activeProps={{ className: "text-ink" }}
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
 
           <div className="ml-auto flex items-center gap-4">
@@ -142,19 +146,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
 
             <nav className="flex flex-col gap-1">
-              {podeEscalar
-                ? navItems.map((item) => (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      onClick={() => setMenuOpen(false)}
-                      className="rounded-md px-3 py-2.5 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink"
-                      activeProps={{ className: "bg-surface2 text-ink" }}
-                    >
-                      {item.label}
-                    </Link>
-                  ))
-                : departamentos.map((d) => (
+              {porMinisterio
+                ? departamentos.map((d) => (
                     <Link
                       key={d.id}
                       to="/escala"
@@ -166,7 +159,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                     >
                       {d.nome}
                     </Link>
-                  ))}
+                  ))
+                : null}
+              {navItems.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-md px-3 py-2.5 text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink"
+                  activeProps={{ className: "bg-surface2 text-ink" }}
+                >
+                  {item.label}
+                </Link>
+              ))}
               <button
                 onClick={sair}
                 className="mt-2 rounded-md border border-line px-3 py-2.5 text-left text-[14px] text-muted transition-colors hover:text-ink"
