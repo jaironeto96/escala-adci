@@ -1,11 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
-import { consultas, cor, dataCurta, hoje, hora } from "@/lib/dados";
+import { supabase } from "@/integrations/supabase/client";
+import { consultas, cor, dataCurta, hoje, hora, type Culto, type Funcao } from "@/lib/dados";
+import { funcaoAtivaNoCulto, padraoIncluiFuncao } from "@/lib/funcoes-do-culto";
 import { usePapel } from "@/hooks/usePapel";
 import { useMinhaPessoa } from "@/hooks/useMinhaPessoa";
 import { AtribuirModal } from "@/components/AtribuirModal";
+import { AdicionarFuncaoModal } from "@/components/AdicionarFuncaoModal";
 
 type Busca = { depto?: string | undefined; minha?: boolean | undefined };
 
@@ -55,18 +59,25 @@ function EscalaPage() {
   const { depto, minha } = Route.useSearch();
   const { podeEscalar } = usePapel();
   const { pessoaId } = useMinhaPessoa();
+  const qc = useQueryClient();
 
   const { data: departamentos = [] } = useQuery(consultas.departamentos());
   const { data: funcoes = [] } = useQuery(consultas.funcoes());
   const { data: pessoas = [] } = useQuery(consultas.pessoas());
   const { data: cultos = [] } = useQuery(consultas.cultos());
   const { data: escalas = [] } = useQuery(consultas.escalas());
+  const { data: ajustes = [] } = useQuery(consultas.ajustesFuncao());
 
   const [alvo, setAlvo] = useState<{ cultoId: string; funcaoId: string } | null>(null);
+  const [adicionarEm, setAdicionarEm] = useState<Culto | null>(null);
   const [mes, setMes] = useState(() => {
     const atual = hoje().slice(0, 7);
     return atual < MES_MINIMO ? MES_MINIMO : atual;
   });
+
+  // Mexer nas funcoes de um culto e trabalho de quem escala — e nao faz sentido
+  // em "Minha escala", que e so a visao pessoal de quem esta logado.
+  const podeAjustar = podeEscalar && !minha;
 
   const minhasEscalas = useMemo(
     () => (pessoaId ? escalas.filter((e) => e.pessoa_id === pessoaId) : []),
@@ -89,13 +100,61 @@ function EscalaPage() {
     return doDepto.filter((f) => minhas.has(f.id));
   }, [funcoes, depto, minha, minhasEscalas]);
 
-  // O ministerio escolhido no menu ou nos filtros. Sem ele, a grade mostra tudo.
+  // O ministerio escolhido no menu. Sem ele, a grade mostra tudo.
   const deptoAtual = departamentos.find((d) => d.id === depto);
 
   const deptoDe = (funcaoId: string) => {
     const f = funcoes.find((x) => x.id === funcaoId);
     return departamentos.find((d) => d.id === f?.departamento_id);
   };
+
+  const ativa = (culto: Culto, f: Funcao) => funcaoAtivaNoCulto(culto, f, departamentos, ajustes);
+
+  const escaladosEm = (culto: Culto, f: Funcao) =>
+    escalas.filter((e) => e.culto_id === culto.id && e.funcao_id === f.id);
+
+  const alternarFuncao = useMutation({
+    mutationFn: async (v: { culto: Culto; funcao: Funcao; incluir: boolean }) => {
+      const padrao = padraoIncluiFuncao(v.culto, v.funcao, departamentos);
+      // Voltar ao que a regra ja diria nao e ajuste nenhum: apaga a excecao em vez
+      // de gravar uma linha que so repete o padrao.
+      if (v.incluir === padrao) {
+        const { error } = await supabase
+          .from("culto_funcao_ajustes")
+          .delete()
+          .eq("culto_id", v.culto.id)
+          .eq("funcao_id", v.funcao.id);
+        if (error) throw error;
+        return;
+      }
+      const { error } = await supabase
+        .from("culto_funcao_ajustes")
+        .upsert({ culto_id: v.culto.id, funcao_id: v.funcao.id, incluir: v.incluir });
+      if (error) throw error;
+    },
+    onSuccess: (_r, v) => {
+      qc.invalidateQueries({ queryKey: ["culto_funcao_ajustes"] });
+      toast.success(
+        v.incluir
+          ? `Função ${v.funcao.nome} adicionada a este culto.`
+          : `Função ${v.funcao.nome} excluída deste culto.`,
+      );
+    },
+    onError: () => toast.error("Não foi possível alterar as funções deste culto."),
+  });
+
+  const excluirFuncao = (culto: Culto, f: Funcao) => {
+    // Excluir com gente escalada deixaria a pessoa numa funcao que "nao existe"
+    // naquele dia — e o aviso por e-mail sairia do mesmo jeito.
+    if (escaladosEm(culto, f).length > 0) {
+      toast.error("Tire as pessoas escaladas nesta função antes de excluí-la.");
+      return;
+    }
+    alternarFuncao.mutate({ culto, funcao: f, incluir: false });
+  };
+
+  const adicionarFuncao = (culto: Culto, f: Funcao) =>
+    alternarFuncao.mutate({ culto, funcao: f, incluir: true });
 
   const mudarMes = (delta: number) => {
     const [a, m] = mes.split("-").map(Number);
@@ -161,12 +220,17 @@ function EscalaPage() {
             const doCulto = colunas
               .map((f) => ({
                 funcao: f,
-                atribuicoes: escalas.filter((e) => e.culto_id === culto.id && e.funcao_id === f.id),
+                vale: ativa(culto, f),
+                atribuicoes: escaladosEm(culto, f),
               }))
+              // Funcao fora deste culto some — a menos que ainda tenha gente
+              // escalada nela; ai continua visivel para nada ficar escondido.
+              .filter((item) => item.vale || item.atribuicoes.length > 0)
               // Quem so acompanha nao precisa ver funcao vazia; quem escala precisa,
               // senao nao tem onde clicar para atribuir.
               .filter((item) => podeEscalar || item.atribuicoes.length > 0);
 
+            const paraAdicionar = colunas.filter((f) => !ativa(culto, f));
             const ehHoje = culto.data === hoje();
 
             return (
@@ -198,14 +262,30 @@ function EscalaPage() {
                   </p>
                 ) : (
                   <div className="divide-y divide-line">
-                    {doCulto.map(({ funcao: f, atribuicoes }) => {
+                    {doCulto.map(({ funcao: f, vale, atribuicoes }) => {
                       const c = cor(deptoDe(f.id)?.cor);
                       return (
                         <div key={f.id} className="flex flex-col gap-2 px-4 py-3">
-                          <span className="label-mono flex items-center gap-2">
-                            <span className={`size-2 rounded-full ${c.dot}`} />
-                            {f.nome}
-                          </span>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="label-mono flex items-center gap-2">
+                              <span className={`size-2 rounded-full ${c.dot}`} />
+                              {f.nome}
+                              {vale ? null : (
+                                <span className="normal-case tracking-normal text-amber">
+                                  · fora deste culto
+                                </span>
+                              )}
+                            </span>
+                            {podeAjustar && vale ? (
+                              <button
+                                onClick={() => excluirFuncao(culto, f)}
+                                disabled={alternarFuncao.isPending}
+                                className="font-mono text-[11px] text-muted transition-colors hover:text-clay disabled:opacity-50"
+                              >
+                                Excluir
+                              </button>
+                            ) : null}
+                          </div>
                           <div className="flex flex-wrap items-center gap-1.5">
                             {atribuicoes.map((e) => (
                               <span
@@ -215,7 +295,7 @@ function EscalaPage() {
                                 {pessoas.find((x) => x.id === e.pessoa_id)?.nome ?? "—"}
                               </span>
                             ))}
-                            {podeEscalar ? (
+                            {podeEscalar && vale ? (
                               <button
                                 onClick={() => setAlvo({ cultoId: culto.id, funcaoId: f.id })}
                                 className="rounded-md border border-dashed border-line px-2.5 py-1 text-[13px] text-muted transition-colors hover:border-clay/50 hover:text-clay"
@@ -229,6 +309,17 @@ function EscalaPage() {
                     })}
                   </div>
                 )}
+
+                {podeAjustar && paraAdicionar.length > 0 ? (
+                  <div className="border-t border-line px-4 py-3">
+                    <button
+                      onClick={() => setAdicionarEm(culto)}
+                      className="w-full rounded-md border border-dashed border-line py-2 text-[13px] text-muted transition-colors hover:border-clay/50 hover:text-clay"
+                    >
+                      + Adicionar função
+                    </button>
+                  </div>
+                ) : null}
               </article>
             );
           })
@@ -270,50 +361,96 @@ function EscalaPage() {
                   </td>
                 </tr>
               ) : (
-                linhas.map((culto) => (
-                  <tr key={culto.id} className="transition-colors hover:bg-surface2">
-                    <td
-                      className={`sticky left-0 z-10 bg-surface px-4 py-3 whitespace-nowrap ${culto.data === hoje() ? "text-clay" : ""}`}
-                    >
-                      <div className="font-medium">{dataCurta(culto.data)}</div>
-                      <div className="font-mono text-[11px] text-muted">
-                        {culto.titulo} · {hora(culto.horario)}
-                      </div>
-                    </td>
-                    {colunas.map((f) => {
-                      const atribuicoes = escalas.filter(
-                        (e) => e.culto_id === culto.id && e.funcao_id === f.id,
-                      );
-                      return (
-                        <td
-                          key={f.id}
-                          className={`px-4 py-3 align-top ${culto.data === hoje() ? "bg-clay/5" : ""}`}
-                        >
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            {atribuicoes.map((e) => (
-                              <span
-                                key={e.id}
-                                className="rounded-md bg-surface2 px-2.5 py-1 text-[12px] whitespace-nowrap ring-1 ring-line"
-                              >
-                                {pessoas.find((x) => x.id === e.pessoa_id)?.nome ?? "—"}
-                              </span>
-                            ))}
-                            {podeEscalar ? (
-                              <button
-                                onClick={() => setAlvo({ cultoId: culto.id, funcaoId: f.id })}
-                                className="rounded-md border border-dashed border-line px-2.5 py-1 text-[12px] whitespace-nowrap text-muted transition-colors hover:border-clay/50 hover:text-clay"
-                              >
-                                {atribuicoes.length > 0 ? "+" : "Atribuir"}
-                              </button>
-                            ) : atribuicoes.length === 0 ? (
-                              <span className="font-mono text-[11px] text-muted">—</span>
-                            ) : null}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))
+                linhas.map((culto) => {
+                  const ehHoje = culto.data === hoje();
+                  return (
+                    <tr key={culto.id} className="transition-colors hover:bg-surface2">
+                      <td
+                        className={`sticky left-0 z-10 bg-surface px-4 py-3 whitespace-nowrap ${ehHoje ? "text-clay" : ""}`}
+                      >
+                        <div className="font-medium">{dataCurta(culto.data)}</div>
+                        <div className="font-mono text-[11px] text-muted">
+                          {culto.titulo} · {hora(culto.horario)}
+                        </div>
+                      </td>
+                      {colunas.map((f) => {
+                        const atribuicoes = escaladosEm(culto, f);
+                        const vale = ativa(culto, f);
+
+                        // A tabela precisa de colunas fixas, mas nem toda funcao existe
+                        // em todo culto. Celula de funcao ausente fica apagada; quem
+                        // escala pode trazer a funcao de volta so para este dia.
+                        if (!vale) {
+                          return (
+                            <td key={f.id} className="group bg-surface2/50 px-4 py-3 align-top">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {atribuicoes.map((e) => (
+                                  <span
+                                    key={e.id}
+                                    title="Escalado numa função que está fora deste culto"
+                                    className="rounded-md bg-amber/10 px-2.5 py-1 text-[12px] whitespace-nowrap text-amber ring-1 ring-amber/25"
+                                  >
+                                    {pessoas.find((x) => x.id === e.pessoa_id)?.nome ?? "—"}
+                                  </span>
+                                ))}
+                                {podeAjustar ? (
+                                  <button
+                                    onClick={() => adicionarFuncao(culto, f)}
+                                    disabled={alternarFuncao.isPending}
+                                    className="rounded-md px-2 py-1 font-mono text-[11px] whitespace-nowrap text-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-clay focus:opacity-100"
+                                  >
+                                    + Adicionar
+                                  </button>
+                                ) : atribuicoes.length === 0 ? (
+                                  <span className="font-mono text-[11px] text-muted/40">—</span>
+                                ) : null}
+                              </div>
+                            </td>
+                          );
+                        }
+
+                        return (
+                          <td
+                            key={f.id}
+                            className={`group px-4 py-3 align-top ${ehHoje ? "bg-clay/5" : ""}`}
+                          >
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {atribuicoes.map((e) => (
+                                <span
+                                  key={e.id}
+                                  className="rounded-md bg-surface2 px-2.5 py-1 text-[12px] whitespace-nowrap ring-1 ring-line"
+                                >
+                                  {pessoas.find((x) => x.id === e.pessoa_id)?.nome ?? "—"}
+                                </span>
+                              ))}
+                              {podeEscalar ? (
+                                <button
+                                  onClick={() => setAlvo({ cultoId: culto.id, funcaoId: f.id })}
+                                  className="rounded-md border border-dashed border-line px-2.5 py-1 text-[12px] whitespace-nowrap text-muted transition-colors hover:border-clay/50 hover:text-clay"
+                                >
+                                  {atribuicoes.length > 0 ? "+" : "Atribuir"}
+                                </button>
+                              ) : atribuicoes.length === 0 ? (
+                                <span className="font-mono text-[11px] text-muted">—</span>
+                              ) : null}
+                              {podeAjustar ? (
+                                <button
+                                  onClick={() => excluirFuncao(culto, f)}
+                                  disabled={alternarFuncao.isPending}
+                                  title="Excluir esta função só deste culto"
+                                  aria-label={`Excluir ${f.nome} deste culto`}
+                                  className="rounded-md px-1.5 py-1 font-mono text-[11px] text-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-clay focus:opacity-100"
+                                >
+                                  Excluir
+                                </button>
+                              ) : null}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -325,6 +462,17 @@ function EscalaPage() {
           cultoId={alvo.cultoId}
           funcaoId={alvo.funcaoId}
           onClose={() => setAlvo(null)}
+        />
+      ) : null}
+
+      {adicionarEm ? (
+        <AdicionarFuncaoModal
+          culto={adicionarEm}
+          candidatas={colunas.filter((f) => !ativa(adicionarEm, f))}
+          departamentos={departamentos}
+          ocupado={alternarFuncao.isPending}
+          onAdicionar={(f) => adicionarFuncao(adicionarEm, f)}
+          onClose={() => setAdicionarEm(null)}
         />
       ) : null}
     </>

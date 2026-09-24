@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      culto_funcao_ajustes: {
+        Row: {
+          created_at: string
+          culto_id: string
+          funcao_id: string
+          incluir: boolean
+        }
+        Insert: {
+          created_at?: string
+          culto_id: string
+          funcao_id: string
+          incluir: boolean
+        }
+        Update: {
+          created_at?: string
+          culto_id?: string
+          funcao_id?: string
+          incluir?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "culto_funcao_ajustes_culto_id_fkey"
+            columns: ["culto_id"]
+            isOneToOne: false
+            referencedRelation: "cultos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "culto_funcao_ajustes_funcao_id_fkey"
+            columns: ["funcao_id"]
+            isOneToOne: false
+            referencedRelation: "funcoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cultos: {
         Row: {
           created_at: string

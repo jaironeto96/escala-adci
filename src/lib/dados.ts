@@ -10,6 +10,8 @@ export type Pessoa = {
   ativo: boolean;
 };
 export type Culto = { id: string; titulo: string; data: string; horario: string };
+/** Excecao a regra de funcoes de um culto — ver src/lib/funcoes-do-culto.ts. */
+export type AjusteFuncao = { culto_id: string; funcao_id: string; incluir: boolean };
 export type Escala = {
   id: string;
   culto_id: string;
@@ -122,7 +124,6 @@ export function gerarRecorrentes(semanas = 8, inicioIso = hoje()) {
   return lista;
 }
 
-
 async function pegar<T>(promise: PromiseLike<{ data: T | null; error: unknown }>) {
   const { data, error } = await promise;
   if (error) throw error;
@@ -165,11 +166,14 @@ export const consultas = {
     queryKey: ["cultos"],
     queryFn: () =>
       pegar<Culto[]>(
-        supabase
-          .from("cultos")
-          .select("id, titulo, data, horario")
-          .order("data")
-          .order("horario"),
+        supabase.from("cultos").select("id, titulo, data, horario").order("data").order("horario"),
+      ),
+  }),
+  ajustesFuncao: () => ({
+    queryKey: ["culto_funcao_ajustes"],
+    queryFn: () =>
+      pegar<AjusteFuncao[]>(
+        supabase.from("culto_funcao_ajustes").select("culto_id, funcao_id, incluir"),
       ),
   }),
   escalas: () => ({
