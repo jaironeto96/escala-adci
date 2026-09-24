@@ -1,10 +1,8 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
-import { salvarTelefone } from "@/lib/conta.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -35,7 +33,6 @@ function AuthPage() {
   const [senha, setSenha] = useState("");
   const [celular, setCelular] = useState("");
   const [carregando, setCarregando] = useState(false);
-  const enviarTelefone = useServerFn(salvarTelefone);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -47,7 +44,8 @@ function AuthPage() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password: senha,
-      // A trigger do banco lê full_name para preencher o nome em `pessoas`.
+      // A trigger do banco lê full_name e telefone e cria o voluntário em `pessoas`
+      // no mesmo instante — funciona até com a confirmação de e-mail ligada.
       options: { data: { full_name: nome.trim(), telefone: celular.trim() } },
     });
     if (error) throw error;
@@ -58,16 +56,6 @@ function AuthPage() {
       toast.info("Conta criada. Confirme o e-mail para poder entrar.");
       setModo("entrar");
       return;
-    }
-
-    if (celular.trim()) {
-      try {
-        await enviarTelefone({ data: { telefone: celular.trim() } });
-      } catch {
-        toast.warning(
-          "Conta criada, mas o celular não foi salvo. Peça para atualizarem em Voluntários.",
-        );
-      }
     }
 
     toast.success("Conta criada.");
