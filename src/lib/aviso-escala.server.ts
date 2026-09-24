@@ -219,6 +219,16 @@ export async function responderAvisoEscala(request: Request): Promise<Response> 
 
   try {
     const resumo = await enviarAvisosDoDia();
+
+    // Falha de envio tem que aparecer como falha. Respondendo 200, a Vercel pinta a
+    // execucao de verde e um problema de senha passaria semanas sem ninguem notar —
+    // ate alguem faltar num culto por nao ter sido avisado. Os e-mails que sairam
+    // ja ficaram marcados, entao rodar de novo nao duplica nada.
+    if (resumo.falhas > 0) {
+      console.error("[aviso-escala] envio com falhas:", resumo);
+      return json(500, { ok: false, ...resumo });
+    }
+
     console.log("[aviso-escala]", resumo);
     return json(200, { ok: true, ...resumo });
   } catch (erro) {
