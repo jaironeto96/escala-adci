@@ -66,7 +66,7 @@ function montarTexto(nome: string, itens: Item[]) {
     ...linhas,
     "",
     "Que Deus abençoe o seu serviço.",
-    "ADCI · Ministérios",
+    "ADCI · Primeira Assembleia de Deus Coqueiral de Itaparica",
   ].join("\n");
 }
 
@@ -83,7 +83,7 @@ function montarHtml(nome: string, itens: Item[]) {
     `<p>Olá, ${nome}!</p>`,
     `<p>Você está escalado hoje, <strong>${dia}</strong>:</p>`,
     `<ul style="padding-left:18px">${linhas}</ul>`,
-    `<p style="color:#666;font-size:13px;margin-top:24px">Que Deus abençoe o seu serviço.<br>ADCI · Ministérios</p>`,
+    `<p style="color:#666;font-size:13px;margin-top:24px">Que Deus abençoe o seu serviço.<br>ADCI · Primeira Assembleia de Deus Coqueiral de Itaparica</p>`,
     `</div>`,
   ].join("");
 }
