@@ -14,8 +14,8 @@ export function normalizar(texto: string) {
 
 // Funcoes de Midia que so existem nos cultos maiores.
 const SO_CULTOS_MAIORES = new Set(["foto", "story", "comunicador"]);
-// Na EBD a Midia se resume ao som.
-const SO_NA_EBD = new Set(["som", "aux som"]);
+// Na EBD a Midia se resume a Som, Aux Som e Data.
+const SO_NA_EBD = new Set(["som", "aux som", "data"]);
 // Nunca entram por padrao — so quando alguem acrescenta a mao.
 const NUNCA_POR_PADRAO = new Set(["reels"]);
 

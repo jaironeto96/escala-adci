@@ -1,15 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 
-import { supabase } from "@/integrations/supabase/client";
 import { consultas, cor, dataCurta, hoje, hora, type Culto, type Funcao } from "@/lib/dados";
-import { funcaoAtivaNoCulto, padraoIncluiFuncao } from "@/lib/funcoes-do-culto";
+import { funcaoAtivaNoCulto } from "@/lib/funcoes-do-culto";
 import { usePapel } from "@/hooks/usePapel";
 import { useMinhaPessoa } from "@/hooks/useMinhaPessoa";
+import { useAjustarFuncao } from "@/hooks/useAjustarFuncao";
 import { AtribuirModal } from "@/components/AtribuirModal";
-import { AdicionarFuncaoModal } from "@/components/AdicionarFuncaoModal";
+import { FuncoesDoCultoModal } from "@/components/FuncoesDoCultoModal";
 
 type Busca = { depto?: string | undefined; minha?: boolean | undefined };
 
@@ -59,7 +58,6 @@ function EscalaPage() {
   const { depto, minha } = Route.useSearch();
   const { podeEscalar } = usePapel();
   const { pessoaId } = useMinhaPessoa();
-  const qc = useQueryClient();
 
   const { data: departamentos = [] } = useQuery(consultas.departamentos());
   const { data: funcoes = [] } = useQuery(consultas.funcoes());
@@ -69,7 +67,7 @@ function EscalaPage() {
   const { data: ajustes = [] } = useQuery(consultas.ajustesFuncao());
 
   const [alvo, setAlvo] = useState<{ cultoId: string; funcaoId: string } | null>(null);
-  const [adicionarEm, setAdicionarEm] = useState<Culto | null>(null);
+  const [painelDe, setPainelDe] = useState<Culto | null>(null);
   const [mes, setMes] = useState(() => {
     const atual = hoje().slice(0, 7);
     return atual < MES_MINIMO ? MES_MINIMO : atual;
@@ -113,48 +111,8 @@ function EscalaPage() {
   const escaladosEm = (culto: Culto, f: Funcao) =>
     escalas.filter((e) => e.culto_id === culto.id && e.funcao_id === f.id);
 
-  const alternarFuncao = useMutation({
-    mutationFn: async (v: { culto: Culto; funcao: Funcao; incluir: boolean }) => {
-      const padrao = padraoIncluiFuncao(v.culto, v.funcao, departamentos);
-      // Voltar ao que a regra ja diria nao e ajuste nenhum: apaga a excecao em vez
-      // de gravar uma linha que so repete o padrao.
-      if (v.incluir === padrao) {
-        const { error } = await supabase
-          .from("culto_funcao_ajustes")
-          .delete()
-          .eq("culto_id", v.culto.id)
-          .eq("funcao_id", v.funcao.id);
-        if (error) throw error;
-        return;
-      }
-      const { error } = await supabase
-        .from("culto_funcao_ajustes")
-        .upsert({ culto_id: v.culto.id, funcao_id: v.funcao.id, incluir: v.incluir });
-      if (error) throw error;
-    },
-    onSuccess: (_r, v) => {
-      qc.invalidateQueries({ queryKey: ["culto_funcao_ajustes"] });
-      toast.success(
-        v.incluir
-          ? `Função ${v.funcao.nome} adicionada a este culto.`
-          : `Função ${v.funcao.nome} excluída deste culto.`,
-      );
-    },
-    onError: () => toast.error("Não foi possível alterar as funções deste culto."),
-  });
-
-  const excluirFuncao = (culto: Culto, f: Funcao) => {
-    // Excluir com gente escalada deixaria a pessoa numa funcao que "nao existe"
-    // naquele dia — e o aviso por e-mail sairia do mesmo jeito.
-    if (escaladosEm(culto, f).length > 0) {
-      toast.error("Tire as pessoas escaladas nesta função antes de excluí-la.");
-      return;
-    }
-    alternarFuncao.mutate({ culto, funcao: f, incluir: false });
-  };
-
-  const adicionarFuncao = (culto: Culto, f: Funcao) =>
-    alternarFuncao.mutate({ culto, funcao: f, incluir: true });
+  // Mesma regra de excluir em todo lugar: vem do hook, nao e reescrita aqui.
+  const { excluir: excluirFuncao, adicionar: adicionarFuncao, ocupado } = useAjustarFuncao();
 
   const mudarMes = (delta: number) => {
     const [a, m] = mes.split("-").map(Number);
@@ -230,7 +188,6 @@ function EscalaPage() {
               // senao nao tem onde clicar para atribuir.
               .filter((item) => podeEscalar || item.atribuicoes.length > 0);
 
-            const paraAdicionar = colunas.filter((f) => !ativa(culto, f));
             const ehHoje = culto.data === hoje();
 
             return (
@@ -279,7 +236,7 @@ function EscalaPage() {
                             {podeAjustar && vale ? (
                               <button
                                 onClick={() => excluirFuncao(culto, f)}
-                                disabled={alternarFuncao.isPending}
+                                disabled={ocupado}
                                 className="font-mono text-[11px] text-muted transition-colors hover:text-clay disabled:opacity-50"
                               >
                                 Excluir
@@ -310,13 +267,16 @@ function EscalaPage() {
                   </div>
                 )}
 
-                {podeAjustar && paraAdicionar.length > 0 ? (
+                {/* Sempre visivel para quem ajusta, em qualquer ministerio. Antes so
+                    aparecia quando havia algo a adicionar naquele ministerio — na
+                    pagina da Base, onde tudo ja vale, o botao sumia. */}
+                {podeAjustar ? (
                   <div className="border-t border-line px-4 py-3">
                     <button
-                      onClick={() => setAdicionarEm(culto)}
+                      onClick={() => setPainelDe(culto)}
                       className="w-full rounded-md border border-dashed border-line py-2 text-[13px] text-muted transition-colors hover:border-clay/50 hover:text-clay"
                     >
-                      + Adicionar função
+                      Funções deste culto
                     </button>
                   </div>
                 ) : null}
@@ -372,6 +332,14 @@ function EscalaPage() {
                         <div className="font-mono text-[11px] text-muted">
                           {culto.titulo} · {hora(culto.horario)}
                         </div>
+                        {podeAjustar ? (
+                          <button
+                            onClick={() => setPainelDe(culto)}
+                            className="mt-1.5 font-mono text-[11px] text-muted underline-offset-2 transition-colors hover:text-clay hover:underline"
+                          >
+                            Funções deste culto
+                          </button>
+                        ) : null}
                       </td>
                       {colunas.map((f) => {
                         const atribuicoes = escaladosEm(culto, f);
@@ -396,7 +364,7 @@ function EscalaPage() {
                                 {podeAjustar ? (
                                   <button
                                     onClick={() => adicionarFuncao(culto, f)}
-                                    disabled={alternarFuncao.isPending}
+                                    disabled={ocupado}
                                     className="rounded-md px-2 py-1 font-mono text-[11px] whitespace-nowrap text-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-clay focus:opacity-100"
                                   >
                                     + Adicionar
@@ -436,7 +404,7 @@ function EscalaPage() {
                               {podeAjustar ? (
                                 <button
                                   onClick={() => excluirFuncao(culto, f)}
-                                  disabled={alternarFuncao.isPending}
+                                  disabled={ocupado}
                                   title="Excluir esta função só deste culto"
                                   aria-label={`Excluir ${f.nome} deste culto`}
                                   className="rounded-md px-1.5 py-1 font-mono text-[11px] text-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-clay focus:opacity-100"
@@ -465,16 +433,7 @@ function EscalaPage() {
         />
       ) : null}
 
-      {adicionarEm ? (
-        <AdicionarFuncaoModal
-          culto={adicionarEm}
-          candidatas={colunas.filter((f) => !ativa(adicionarEm, f))}
-          departamentos={departamentos}
-          ocupado={alternarFuncao.isPending}
-          onAdicionar={(f) => adicionarFuncao(adicionarEm, f)}
-          onClose={() => setAdicionarEm(null)}
-        />
-      ) : null}
+      {painelDe ? <FuncoesDoCultoModal culto={painelDe} onClose={() => setPainelDe(null)} /> : null}
     </>
   );
 }

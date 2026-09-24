@@ -12,10 +12,14 @@ import {
   hoje,
   hora,
   MODELOS_RECORRENTES,
+  type Culto,
 } from "@/lib/dados";
+import { funcaoAtivaNoCulto } from "@/lib/funcoes-do-culto";
 import { usePapel } from "@/hooks/usePapel";
+import { useAjustarFuncao } from "@/hooks/useAjustarFuncao";
 import { exigirPodeEscalar } from "@/lib/guardas";
 import { AtribuirModal } from "@/components/AtribuirModal";
+import { FuncoesDoCultoModal } from "@/components/FuncoesDoCultoModal";
 
 const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -44,11 +48,14 @@ function CultosPage() {
   const { data: pessoas = [] } = useQuery(consultas.pessoas());
   const { data: funcoes = [] } = useQuery(consultas.funcoes());
   const { data: departamentos = [] } = useQuery(consultas.departamentos());
+  const { data: ajustes = [] } = useQuery(consultas.ajustesFuncao());
+  const { excluir: excluirFuncao, ocupado } = useAjustarFuncao();
 
   const [form, setForm] = useState({ titulo: "", data: hoje(), horario: "19:00" });
   const [semanas, setSemanas] = useState(8);
   const [dias, setDias] = useState<number[]>([]);
   const [alvo, setAlvo] = useState<{ cultoId: string; funcaoId: string } | null>(null);
+  const [painelDe, setPainelDe] = useState<Culto | null>(null);
 
   const visiveis = useMemo(
     () =>
@@ -243,6 +250,14 @@ function CultosPage() {
                   <span className="font-mono text-[11px] text-muted">
                     {doCulto.length} escalados
                   </span>
+                  {podeEscalar ? (
+                    <button
+                      onClick={() => setPainelDe(c)}
+                      className="font-mono text-[11px] text-muted transition-colors hover:text-clay"
+                    >
+                      Funções
+                    </button>
+                  ) : null}
                   {ehAdmin ? (
                     <button
                       onClick={() => excluir.mutate(c.id)}
@@ -254,43 +269,71 @@ function CultosPage() {
                 </div>
               </div>
               <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {funcoes.map((f) => {
-                  const d = departamentos.find((x) => x.id === f.departamento_id);
-                  const naFuncao = doCulto.filter((e) => e.funcao_id === f.id);
-                  return (
-                    <div key={f.id} className="rounded-lg border border-line bg-surface2 px-3 py-2">
-                      <div className="flex items-center gap-2 font-mono text-[11px] text-muted">
-                        <span className={`size-2 rounded-full ${cor(d?.cor).dot}`} />
-                        {f.nome}
-                      </div>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        {naFuncao.map((e) => (
-                          <span
-                            key={e.id}
-                            className={`rounded-full px-2.5 py-1 text-[11px] ring-1 ${cor(d?.cor).chip}`}
-                          >
-                            {pessoas.find((p) => p.id === e.pessoa_id)?.nome}
+                {/* Esta tela mostrava toda funcao em todo culto, ignorando a regra do
+                    dia: uma quinta aparecia com Foto, Story e Comunicador. Agora segue
+                    a mesma regra da Escala. Funcao fora do culto so aparece se ainda
+                    tiver gente escalada nela, para nada ficar escondido. */}
+                {funcoes
+                  .filter(
+                    (f) =>
+                      funcaoAtivaNoCulto(c, f, departamentos, ajustes) ||
+                      doCulto.some((e) => e.funcao_id === f.id),
+                  )
+                  .map((f) => {
+                    const d = departamentos.find((x) => x.id === f.departamento_id);
+                    const naFuncao = doCulto.filter((e) => e.funcao_id === f.id);
+                    const vale = funcaoAtivaNoCulto(c, f, departamentos, ajustes);
+                    return (
+                      <div
+                        key={f.id}
+                        className="rounded-lg border border-line bg-surface2 px-3 py-2"
+                      >
+                        <div className="flex items-center justify-between gap-2 font-mono text-[11px] text-muted">
+                          <span className="flex items-center gap-2">
+                            <span className={`size-2 rounded-full ${cor(d?.cor).dot}`} />
+                            {f.nome}
+                            {vale ? null : <span className="text-amber">· fora deste culto</span>}
                           </span>
-                        ))}
-                        {podeEscalar ? (
-                          <button
-                            onClick={() => setAlvo({ cultoId: c.id, funcaoId: f.id })}
-                            className="rounded-md border border-dashed border-line px-2.5 py-1 text-[11px] text-muted transition-colors hover:border-clay/50 hover:text-clay"
-                          >
-                            {naFuncao.length > 0 ? "+" : "Atribuir"}
-                          </button>
-                        ) : naFuncao.length === 0 ? (
-                          <span className="font-mono text-[11px] text-muted">—</span>
-                        ) : null}
+                          {podeEscalar && vale ? (
+                            <button
+                              onClick={() => excluirFuncao(c, f)}
+                              disabled={ocupado}
+                              className="transition-colors hover:text-clay disabled:opacity-50"
+                            >
+                              Excluir
+                            </button>
+                          ) : null}
+                        </div>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          {naFuncao.map((e) => (
+                            <span
+                              key={e.id}
+                              className={`rounded-full px-2.5 py-1 text-[11px] ring-1 ${cor(d?.cor).chip}`}
+                            >
+                              {pessoas.find((p) => p.id === e.pessoa_id)?.nome}
+                            </span>
+                          ))}
+                          {podeEscalar && vale ? (
+                            <button
+                              onClick={() => setAlvo({ cultoId: c.id, funcaoId: f.id })}
+                              className="rounded-md border border-dashed border-line px-2.5 py-1 text-[11px] text-muted transition-colors hover:border-clay/50 hover:text-clay"
+                            >
+                              {naFuncao.length > 0 ? "+" : "Atribuir"}
+                            </button>
+                          ) : naFuncao.length === 0 ? (
+                            <span className="font-mono text-[11px] text-muted">—</span>
+                          ) : null}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
           );
         })}
       </section>
+
+      {painelDe ? <FuncoesDoCultoModal culto={painelDe} onClose={() => setPainelDe(null)} /> : null}
 
       {alvo ? (
         <AtribuirModal
