@@ -56,7 +56,15 @@ async function criarTransporte() {
 type Item = { culto: string; data: string; horario: string; funcao: string };
 
 // Todo aviso fecha com este versiculo, antes da despedida.
-const VERSICULO_ABERTURA = "Para este mês de trabalho na mídia, lembre-se de 1 Coríntios 15:58:";
+// Em outubro de 2026 so a Midia usa o app. Em novembro o Louvor entra junto, e o
+// versiculo passa a falar com os dois ministerios. A troca e pela data do culto,
+// entao acontece sozinha — nao depende de ninguem lembrar de mexer no codigo.
+const VIRADA_CASA_DO_SENHOR = "2026-11-01";
+
+function aberturaDoVersiculo(dataDoCulto: string) {
+  const onde = dataDoCulto >= VIRADA_CASA_DO_SENHOR ? "na Casa do Senhor" : "na mídia";
+  return `Para este mês de trabalho ${onde}, lembre-se de 1 Coríntios 15:58:`;
+}
 const VERSICULO_TEXTO =
   "Seja firme e constante, sempre abundante na obra do Senhor, sabendo que o seu trabalho não é vão na obra Dele!";
 
@@ -70,7 +78,7 @@ function montarTexto(nome: string, itens: Item[]) {
     "",
     ...linhas,
     "",
-    `${VERSICULO_ABERTURA} "${VERSICULO_TEXTO}"`,
+    `${aberturaDoVersiculo(itens[0]!.data)} "${VERSICULO_TEXTO}"`,
     "",
     "Que Deus abençoe o seu serviço.",
     "ADCI · Primeira Assembleia de Deus Coqueiral de Itaparica",
@@ -90,7 +98,7 @@ function montarHtml(nome: string, itens: Item[]) {
     `<p>Olá, ${nome}!</p>`,
     `<p>Você está escalado hoje, <strong>${dia}</strong>:</p>`,
     `<ul style="padding-left:18px">${linhas}</ul>`,
-    `<p style="margin-top:20px;padding:12px 16px;border-left:3px solid #c2703d;background:#faf6f2;color:#333;font-size:14px;line-height:1.6">${VERSICULO_ABERTURA.replace("1 Coríntios 15:58", "<strong>1 Coríntios 15:58</strong>")}<br><em>"${VERSICULO_TEXTO}"</em></p>`,
+    `<p style="margin-top:20px;padding:12px 16px;border-left:3px solid #c2703d;background:#faf6f2;color:#333;font-size:14px;line-height:1.6">${aberturaDoVersiculo(itens[0]!.data).replace("1 Coríntios 15:58", "<strong>1 Coríntios 15:58</strong>")}<br><em>"${VERSICULO_TEXTO}"</em></p>`,
     `<p style="color:#666;font-size:13px;margin-top:24px">Que Deus abençoe o seu serviço.<br>ADCI · Primeira Assembleia de Deus Coqueiral de Itaparica</p>`,
     `</div>`,
   ].join("");
