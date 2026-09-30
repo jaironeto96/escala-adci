@@ -40,7 +40,12 @@ export function useAjustarFuncao() {
           : `Função ${v.funcao.nome} excluída deste culto.`,
       );
     },
-    onError: () => toast.error("Não foi possível alterar as funções deste culto."),
+    // O motivo vai junto. A mensagem generica escondia que a tabela de ajustes nem
+    // existia no banco: Adicionar e Excluir davam o mesmo erro e ninguem sabia por que.
+    onError: (erro: Error) =>
+      toast.error("Não foi possível alterar as funções deste culto.", {
+        description: erro.message,
+      }),
   });
 
   const escaladosEm = (culto: Culto, funcao: Funcao) =>
