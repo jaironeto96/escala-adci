@@ -82,6 +82,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      // Nome embaixo do ícone na tela inicial do iPhone. Sem isto o iOS usa o título
+      // da página, que na tela de entrada sai cortado: "Entrar · Esc...".
+      { name: "apple-mobile-web-app-title", content: "ADCI Escalas" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -92,6 +95,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      // Ícone do atalho na tela inicial. Sem ele o iPhone desenhava a primeira letra
+      // do título — o "G" de "Grade de escala". O Android le os ícones do manifest.
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
+      { rel: "manifest", href: "/site.webmanifest" },
     ],
   }),
   shellComponent: RootShell,
