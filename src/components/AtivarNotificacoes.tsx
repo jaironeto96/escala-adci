@@ -1,12 +1,6 @@
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
-import {
-  ativarNotificacoes,
-  estadoAtual,
-  sincronizarInscricao,
-  type EstadoNotificacoes,
-} from "@/lib/notificacoes";
+import { useNotificacoes } from "@/hooks/useNotificacoes";
 
 const CHAVE_ADIADO = "notificacoes-adiado-ate";
 const QUATORZE_DIAS = 14 * 24 * 60 * 60 * 1000;
@@ -28,18 +22,14 @@ function adiar() {
 }
 
 // Convite para receber o aviso de escala como notificacao. Quem ja ativou nao ve
-// nada; quem tocou em "Agora nao" so ve de novo daqui a 14 dias.
+// nada; quem tocou em "Agora nao" so ve de novo daqui a 14 dias — e enquanto isso
+// pode ativar pelo item "Notificacoes" do menu.
 export function AtivarNotificacoes() {
-  const [estado, setEstado] = useState<EstadoNotificacoes | null>(null);
+  const { estado, ativando, ativar } = useNotificacoes();
   const [oculto, setOculto] = useState(true);
-  const [ativando, setAtivando] = useState(false);
 
   useEffect(() => {
     setOculto(adiado());
-    estadoAtual()
-      .then(setEstado)
-      .catch(() => setEstado("sem-suporte"));
-    sincronizarInscricao().catch(() => {});
   }, []);
 
   if (oculto || !estado || estado === "ativado" || estado === "sem-suporte") return null;
@@ -48,25 +38,6 @@ export function AtivarNotificacoes() {
     adiar();
     setOculto(true);
   };
-
-  async function ativar() {
-    setAtivando(true);
-    try {
-      const novo = await ativarNotificacoes();
-      setEstado(novo);
-      if (novo === "ativado") {
-        toast.success("Notificações ativadas.", {
-          description: "Você vai receber um aviso no dia em que estiver escalado.",
-        });
-      }
-    } catch (erro) {
-      toast.error("Não foi possível ativar as notificações.", {
-        description: erro instanceof Error ? erro.message : undefined,
-      });
-    } finally {
-      setAtivando(false);
-    }
-  }
 
   return (
     <section className="rise mb-6 flex flex-col gap-3 rounded-xl border border-clay/30 bg-clay/5 p-4 sm:flex-row sm:items-center sm:justify-between">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
@@ -7,6 +7,8 @@ import { Menu, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { consultas, cor, dataCurta, hoje, hora } from "@/lib/dados";
 import { usePapel } from "@/hooks/usePapel";
+import { sincronizarInscricao } from "@/lib/notificacoes";
+import { NotificacoesModal } from "@/components/NotificacoesModal";
 import { cn } from "@/lib/utils";
 
 // Tres niveis de acesso:
@@ -25,6 +27,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { papel, podeEscalar, ehAdmin } = usePapel();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [notificacoesAbertas, setNotificacoesAbertas] = useState(false);
+
+  // Reenvia a inscricao de quem ja ativou, em qualquer tela: o endereco de entrega
+  // pode mudar com o tempo, e assim o banco fica em dia sem pedir nada a ninguem.
+  useEffect(() => {
+    sincronizarInscricao().catch(() => {});
+  }, []);
 
   const { data: departamentos = [] } = useQuery(consultas.departamentos());
   const { data: pessoaDeptos = [] } = useQuery(consultas.pessoaDepartamentos());
@@ -122,6 +131,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             </button>
 
             <button
+              onClick={() => setNotificacoesAbertas(true)}
+              className="hidden rounded-md px-3 py-2 text-[13px] text-muted transition-colors hover:text-ink md:inline-flex"
+            >
+              Notificações
+            </button>
+
+            <button
               onClick={sair}
               className="hidden rounded-md border border-line px-3 py-2 text-[13px] text-muted transition-colors hover:text-ink md:inline-flex"
             >
@@ -183,6 +199,15 @@ export function AppShell({ children }: { children: ReactNode }) {
                   {item.label}
                 </Link>
               ))}
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  setNotificacoesAbertas(true);
+                }}
+                className="mt-2 rounded-md border-t border-line px-3 pt-3.5 pb-2.5 text-left text-[14px] text-muted transition-colors hover:bg-surface hover:text-ink"
+              >
+                Notificações
+              </button>
               <button
                 onClick={sair}
                 className="mt-2 rounded-md border border-line px-3 py-2.5 text-left text-[14px] text-muted transition-colors hover:text-ink"
@@ -250,6 +275,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <main className="min-w-0">{children}</main>
       </div>
+
+      {notificacoesAbertas ? (
+        <NotificacoesModal onClose={() => setNotificacoesAbertas(false)} />
+      ) : null}
     </div>
   );
 }
