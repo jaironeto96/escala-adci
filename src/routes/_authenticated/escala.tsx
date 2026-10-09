@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { consultas, cor, dataCurta, hoje, hora, type Culto, type Funcao } from "@/lib/dados";
 import { funcaoAtivaNoCulto } from "@/lib/funcoes-do-culto";
@@ -11,13 +11,21 @@ import { AtribuirModal } from "@/components/AtribuirModal";
 import { AtivarNotificacoes } from "@/components/AtivarNotificacoes";
 import { FuncoesDoCultoModal } from "@/components/FuncoesDoCultoModal";
 
-type Busca = { depto?: string | undefined; minha?: boolean | undefined };
+type Busca = {
+  depto?: string | undefined;
+  minha?: boolean | undefined;
+  /** Dia a destacar (AAAA-MM-DD). Vem do toque na notificacao do aviso. */
+  dia?: string | undefined;
+};
 
 export const Route = createFileRoute("/_authenticated/escala")({
   validateSearch: (search: Record<string, unknown>): Busca => ({
     ...(typeof search["depto"] === "string" ? { depto: search["depto"] } : {}),
     // O link chega como booleano, mas colado na barra de enderecos vira string.
     ...(search["minha"] === true || search["minha"] === "true" ? { minha: true } : {}),
+    ...(typeof search["dia"] === "string" && /^\d{4}-\d{2}-\d{2}$/.test(search["dia"])
+      ? { dia: search["dia"] }
+      : {}),
   }),
 
   head: () => ({
@@ -56,7 +64,7 @@ const MESES = [
 ];
 
 function EscalaPage() {
-  const { depto, minha } = Route.useSearch();
+  const { depto, minha, dia } = Route.useSearch();
   const { podeEscalar } = usePapel();
   const { pessoaId } = useMinhaPessoa();
 
@@ -70,8 +78,26 @@ function EscalaPage() {
   const [alvo, setAlvo] = useState<{ cultoId: string; funcaoId: string } | null>(null);
   const [painelDe, setPainelDe] = useState<Culto | null>(null);
   const [mes, setMes] = useState(() => {
-    const atual = hoje().slice(0, 7);
+    const atual = (dia ?? hoje()).slice(0, 7);
     return atual < MES_MINIMO ? MES_MINIMO : atual;
+  });
+
+  // Vindo da notificacao, a tela abre no mes do culto, rola ate ele e o destaca.
+  // O app pode ja estar aberto quando a notificacao e tocada — por isso o mes
+  // tambem acompanha mudancas de "dia", e nao so o valor inicial.
+  const rolouPara = useRef<string | null>(null);
+  useEffect(() => {
+    if (dia && dia.slice(0, 7) >= MES_MINIMO) setMes(dia.slice(0, 7));
+  }, [dia]);
+
+  useEffect(() => {
+    if (!dia || rolouPara.current === dia) return;
+    const visivel = [...document.querySelectorAll<HTMLElement>(`[data-culto-dia="${dia}"]`)].find(
+      (el) => el.offsetParent !== null,
+    );
+    if (!visivel) return;
+    rolouPara.current = dia;
+    requestAnimationFrame(() => visivel.scrollIntoView({ behavior: "smooth", block: "center" }));
   });
 
   // Mexer nas funcoes de um culto e trabalho de quem escala — e nao faz sentido
@@ -196,9 +222,10 @@ function EscalaPage() {
             return (
               <article
                 key={culto.id}
+                data-culto-dia={culto.data}
                 className={`overflow-hidden rounded-xl border bg-surface ${
                   ehHoje ? "border-clay/40" : "border-line"
-                }`}
+                } ${culto.data === dia ? "ring-2 ring-clay/60" : ""}`}
               >
                 {/* Empilhado, nao lado a lado: em tela estreita um titulo longo
                     empurrava a data e o horario para a linha de baixo, quebrando
@@ -327,7 +354,15 @@ function EscalaPage() {
                 linhas.map((culto) => {
                   const ehHoje = culto.data === hoje();
                   return (
-                    <tr key={culto.id} className="transition-colors hover:bg-surface2">
+                    <tr
+                      key={culto.id}
+                      data-culto-dia={culto.data}
+                      className={`transition-colors hover:bg-surface2 ${
+                        culto.data === dia
+                          ? "outline outline-2 -outline-offset-2 outline-clay/60"
+                          : ""
+                      }`}
+                    >
                       <td
                         className={`sticky left-0 z-10 bg-surface px-4 py-3 whitespace-nowrap ${ehHoje ? "text-clay" : ""}`}
                       >

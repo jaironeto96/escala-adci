@@ -110,7 +110,7 @@ function montarHtml(nome: string, itens: Item[]) {
   ].join("");
 }
 
-type Destino = { email: string; titulo: string; corpo: string };
+type Destino = { email: string; titulo: string; corpo: string; url: string };
 
 // Notificacao no celular, alem do e-mail. Os dois canais sao independentes: um
 // e-mail que falha nao impede a notificacao, e vice-versa.
@@ -141,7 +141,7 @@ async function enviarNotificacoes(destinos: Destino[]) {
       try {
         await webpush.sendNotification(
           { endpoint: i.endpoint, keys: { p256dh: i.p256dh, auth: i.auth } },
-          JSON.stringify({ titulo: d.titulo, corpo: d.corpo, url: "/escala?minha=true" }),
+          JSON.stringify({ titulo: d.titulo, corpo: d.corpo, url: d.url }),
           // Celular desligado: o aviso ainda chega se ligar ate 12h depois — o culto
           // e no mesmo dia.
           { TTL: 12 * 60 * 60 },
@@ -270,6 +270,8 @@ export async function enviarAvisosDoDia(): Promise<ResumoAviso> {
     [...porPessoa].map(([pessoaId, grupo]) => ({
       email: pessoa.get(pessoaId)!.email,
       titulo: "Você está escalado hoje",
+      // Abre a Minha escala ja no culto do dia.
+      url: `/escala?minha=true&dia=${data}`,
       corpo: grupo.itens.map((i) => `${i.funcao} — ${i.culto}, ${horaCurta(i.horario)}`).join("\n"),
     })),
   );
