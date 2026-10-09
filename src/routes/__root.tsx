@@ -88,6 +88,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // Nome embaixo do ícone na tela inicial do iPhone. Sem isto o iOS usa o título
       // da página, que na tela de entrada sai cortado: "Entrar · Esc...".
       { name: "apple-mobile-web-app-title", content: "ADCI Escalas" },
+      // Aberto pelo atalho, o app roda em tela cheia, sem a barra do navegador. O
+      // Android le isto do manifest ("display": "standalone"); o iPhone, destas tags.
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      // "black" deixa a barra de status preta e o app comeca abaixo dela. A variante
+      // translucida poria o cabecalho do app embaixo do relogio e da bateria.
+      { name: "apple-mobile-web-app-status-bar-style", content: "black" },
+      { name: "theme-color", content: "#000000" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
