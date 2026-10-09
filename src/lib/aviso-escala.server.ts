@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { VAPID_PUBLICA } from "@/lib/vapid";
 
 const FUSO = "America/Sao_Paulo";
 
@@ -8,6 +9,11 @@ export type ResumoAviso = {
   pessoas: number;
   enviados: number;
   falhas: number;
+  /** Aparelhos que receberam a notificacao no celular. */
+  notificacoes: number;
+  falhasNotificacao: number;
+  /** false enquanto VAPID_PRIVATE_KEY nao estiver na Vercel. */
+  notificacoesConfiguradas: boolean;
 };
 
 // A data do culto é `date` puro no banco, sem fuso. Comparar com `new Date()`
@@ -104,9 +110,80 @@ function montarHtml(nome: string, itens: Item[]) {
   ].join("");
 }
 
+type Destino = { email: string; titulo: string; corpo: string };
+
+// Notificacao no celular, alem do e-mail. Os dois canais sao independentes: um
+// e-mail que falha nao impede a notificacao, e vice-versa.
+async function enviarNotificacoes(destinos: Destino[]) {
+  const chavePrivada = process.env["VAPID_PRIVATE_KEY"];
+  if (!chavePrivada) {
+    console.warn("[aviso-escala] VAPID_PRIVATE_KEY nao configurada: notificacoes nao enviadas");
+    return { entregues: 0, falhas: 0 };
+  }
+
+  // Import dinamico, como o nodemailer: so carrega quando ha o que enviar.
+  const { default: webpush } = await import("web-push");
+  webpush.setVapidDetails("mailto:midia@adci.org.br", VAPID_PUBLICA, chavePrivada);
+
+  const emails = [...new Set(destinos.map((d) => d.email.toLowerCase()))];
+  const { data: inscricoes, error } = await supabaseAdmin
+    .from("push_inscricoes")
+    .select("user_id, endpoint, email, p256dh, auth")
+    .in("email", emails);
+  if (error) throw error;
+
+  let entregues = 0;
+  let falhas = 0;
+  const mortas: { user_id: string; endpoint: string }[] = [];
+
+  for (const d of destinos) {
+    for (const i of (inscricoes ?? []).filter((x) => x.email === d.email.toLowerCase())) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: i.endpoint, keys: { p256dh: i.p256dh, auth: i.auth } },
+          JSON.stringify({ titulo: d.titulo, corpo: d.corpo, url: "/escala?minha=true" }),
+          // Celular desligado: o aviso ainda chega se ligar ate 12h depois — o culto
+          // e no mesmo dia.
+          { TTL: 12 * 60 * 60 },
+        );
+        entregues += 1;
+      } catch (erro) {
+        const status = (erro as { statusCode?: number }).statusCode;
+        // 404 e 410: o app foi desinstalado ou a permissao revogada. Nao e falha de
+        // envio, e uma inscricao morta — sai da tabela.
+        if (status === 404 || status === 410) {
+          mortas.push({ user_id: i.user_id, endpoint: i.endpoint });
+          continue;
+        }
+        falhas += 1;
+        console.error(`[aviso-escala] falha na notificacao para ${d.email}:`, erro);
+      }
+    }
+  }
+
+  for (const m of mortas) {
+    await supabaseAdmin
+      .from("push_inscricoes")
+      .delete()
+      .eq("user_id", m.user_id)
+      .eq("endpoint", m.endpoint);
+  }
+
+  return { entregues, falhas };
+}
+
 export async function enviarAvisosDoDia(): Promise<ResumoAviso> {
   const data = hojeEmSaoPaulo();
-  const vazio: ResumoAviso = { data, cultos: 0, pessoas: 0, enviados: 0, falhas: 0 };
+  const vazio: ResumoAviso = {
+    data,
+    cultos: 0,
+    pessoas: 0,
+    enviados: 0,
+    falhas: 0,
+    notificacoes: 0,
+    falhasNotificacao: 0,
+    notificacoesConfiguradas: Boolean(process.env["VAPID_PRIVATE_KEY"]),
+  };
 
   const { data: cultos, error: erroCultos } = await supabaseAdmin
     .from("cultos")
@@ -189,6 +266,14 @@ export async function enviarAvisosDoDia(): Promise<ResumoAviso> {
     }
   }
 
+  const push = await enviarNotificacoes(
+    [...porPessoa].map(([pessoaId, grupo]) => ({
+      email: pessoa.get(pessoaId)!.email,
+      titulo: "Você está escalado hoje",
+      corpo: grupo.itens.map((i) => `${i.funcao} — ${i.culto}, ${horaCurta(i.horario)}`).join("\n"),
+    })),
+  );
+
   // Só marca o que realmente saiu, para que uma falha possa ser reenviada depois.
   if (entregues.length > 0) {
     const { error } = await supabaseAdmin
@@ -204,6 +289,9 @@ export async function enviarAvisosDoDia(): Promise<ResumoAviso> {
     pessoas: porPessoa.size,
     enviados,
     falhas,
+    notificacoes: push.entregues,
+    falhasNotificacao: push.falhas,
+    notificacoesConfiguradas: vazio.notificacoesConfiguradas,
   };
 }
 
@@ -240,7 +328,7 @@ export async function responderAvisoEscala(request: Request): Promise<Response> 
     // execucao de verde e um problema de senha passaria semanas sem ninguem notar —
     // ate alguem faltar num culto por nao ter sido avisado. Os e-mails que sairam
     // ja ficaram marcados, entao rodar de novo nao duplica nada.
-    if (resumo.falhas > 0) {
+    if (resumo.falhas > 0 || resumo.falhasNotificacao > 0) {
       console.error("[aviso-escala] envio com falhas:", resumo);
       return json(500, { ok: false, ...resumo });
     }

@@ -8,6 +8,7 @@ import { usePapel } from "@/hooks/usePapel";
 import { useMinhaPessoa } from "@/hooks/useMinhaPessoa";
 import { useAjustarFuncao } from "@/hooks/useAjustarFuncao";
 import { AtribuirModal } from "@/components/AtribuirModal";
+import { AtivarNotificacoes } from "@/components/AtivarNotificacoes";
 import { FuncoesDoCultoModal } from "@/components/FuncoesDoCultoModal";
 
 type Busca = { depto?: string | undefined; minha?: boolean | undefined };
@@ -164,6 +165,8 @@ function EscalaPage() {
           </div>
         </div>
       </section>
+
+      <AtivarNotificacoes />
 
       {/* Celular: a grade vira lista. Com muitas funcoes, rolar a tabela de lado
           espreme os nomes ate ficarem ilegiveis — aqui cada culto e um cartao e

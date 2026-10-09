@@ -233,6 +233,33 @@ export type Database = {
           },
         ]
       }
+      push_inscricoes: {
+        Row: {
+          auth: string
+          created_at: string
+          email: string
+          endpoint: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          email?: string
+          endpoint: string
+          p256dh: string
+          user_id?: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          email?: string
+          endpoint?: string
+          p256dh?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pessoas: {
         Row: {
           ativo: boolean
