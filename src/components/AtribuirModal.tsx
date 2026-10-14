@@ -1,8 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
-import { consultas, cor, dataCurta, hoje } from "@/lib/dados";
+import { consultas, cor, dataCurta, hoje, type Funcao } from "@/lib/dados";
+
+// "Áudio", "Áudio e Vídeo", "Áudio, Vídeo e Foto".
+function juntar(nomes: string[]) {
+  if (nomes.length <= 1) return nomes[0] ?? "";
+  return `${nomes.slice(0, -1).join(", ")} e ${nomes[nomes.length - 1]}`;
+}
 
 type Props = {
   cultoId: string;
@@ -21,6 +28,28 @@ export function AtribuirModal({ cultoId, funcaoId, onClose }: Props) {
 
   const funcao = funcoes.find((f) => f.id === funcaoId);
   const depto = departamentos.find((d) => d.id === funcao?.departamento_id);
+  const [confirmar, setConfirmar] = useState<{ pessoaId: string; aviso: string } | null>(null);
+
+  // Onde a pessoa ja serve neste culto, em OUTRO ministerio. Quem escala o Louvor
+  // nao ve a escala da Midia, e vice-versa: o choque so aparece aqui. Dentro do
+  // mesmo ministerio nao avisa — quem escala ja esta vendo a propria escala.
+  const emOutroMinisterio = (pessoaId: string): Funcao[] =>
+    escalas
+      .filter((e) => e.culto_id === cultoId && e.pessoa_id === pessoaId && e.funcao_id !== funcaoId)
+      .map((e) => funcoes.find((f) => f.id === e.funcao_id))
+      .filter((f): f is Funcao => !!f && f.departamento_id !== funcao?.departamento_id);
+
+  const escalar = (pessoaId: string, nome: string) => {
+    const choques = emOutroMinisterio(pessoaId);
+    if (choques.length > 0) {
+      setConfirmar({
+        pessoaId,
+        aviso: `${nome} já está escalado(a) para ${juntar(choques.map((f) => f.nome))} neste culto.`,
+      });
+      return;
+    }
+    atribuir.mutate(pessoaId);
+  };
 
   const atribuir = useMutation({
     mutationFn: async (pessoaId: string) => {
@@ -83,7 +112,7 @@ export function AtribuirModal({ cultoId, funcaoId, onClose }: Props) {
                   return (
                     <button
                       key={p.id}
-                      onClick={() => (atual ? remover.mutate(atual.id) : atribuir.mutate(p.id))}
+                      onClick={() => (atual ? remover.mutate(atual.id) : escalar(p.id, p.nome))}
                       className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left transition-colors ${
                         atual
                           ? "border-clay/50 bg-clay/10"
@@ -100,15 +129,46 @@ export function AtribuirModal({ cultoId, funcaoId, onClose }: Props) {
                         </span>
                         {p.nome}
                       </span>
-                      <span className="font-mono text-[11px] text-muted">
-                        {pessoaFuncoes.filter((pf) => pf.pessoa_id === p.id).length} funções
-                      </span>
+                      {!atual && emOutroMinisterio(p.id).length > 0 ? (
+                        <span className="font-mono text-[11px] text-amber">
+                          já em {juntar(emOutroMinisterio(p.id).map((f) => f.nome))}
+                        </span>
+                      ) : (
+                        <span className="font-mono text-[11px] text-muted">
+                          {pessoaFuncoes.filter((pf) => pf.pessoa_id === p.id).length} funções
+                        </span>
+                      )}
                     </button>
                   );
                 })
               )}
             </div>
           </div>
+          {confirmar ? (
+            <div
+              role="alert"
+              className="space-y-3 rounded-md border border-amber/40 bg-amber/10 px-3 py-3"
+            >
+              <p className="text-[13px] leading-relaxed text-ink">{confirmar.aviso}</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    atribuir.mutate(confirmar.pessoaId);
+                    setConfirmar(null);
+                  }}
+                  className="flex-1 rounded-md bg-clay py-2 text-[13px] font-medium text-paper transition-colors hover:bg-clay/85"
+                >
+                  Escalar mesmo assim
+                </button>
+                <button
+                  onClick={() => setConfirmar(null)}
+                  className="flex-1 rounded-md border border-line py-2 text-[13px] text-muted transition-colors hover:text-ink"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : null}
           <div className="flex items-center gap-2 rounded-md bg-surface2 px-3 py-2">
             <span className="size-1.5 rounded-full bg-olive" />
             <span className="font-mono text-[11px] text-muted">

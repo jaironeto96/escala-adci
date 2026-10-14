@@ -103,6 +103,8 @@ function EscalaPage() {
   // Mexer nas funcoes de um culto e trabalho de quem escala — e nao faz sentido
   // em "Minha escala", que e so a visao pessoal de quem esta logado.
   const podeAjustar = podeEscalar && !minha;
+  // Pelo mesmo motivo, "Atribuir" so aparece na escala dos ministerios.
+  const podeAtribuir = podeEscalar && !minha;
 
   const minhasEscalas = useMemo(
     () => (pessoaId ? escalas.filter((e) => e.pessoa_id === pessoaId) : []),
@@ -121,9 +123,15 @@ function EscalaPage() {
   const colunas = useMemo(() => {
     const doDepto = depto ? funcoes.filter((f) => f.departamento_id === depto) : funcoes;
     if (!minha) return doDepto;
-    const minhas = new Set(minhasEscalas.map((e) => e.funcao_id));
-    return doDepto.filter((f) => minhas.has(f.id));
-  }, [funcoes, depto, minha, minhasEscalas]);
+    // Em "Minha escala" a pessoa ve a equipe inteira de cada culto em que esta — com
+    // quem vai servir, e nao so a propria funcao. Ficam so as funcoes preenchidas,
+    // para a tela nao virar uma lista de vazios.
+    const cultosVisiveis = new Set(linhas.map((c) => c.id));
+    const preenchidas = new Set(
+      escalas.filter((e) => cultosVisiveis.has(e.culto_id)).map((e) => e.funcao_id),
+    );
+    return doDepto.filter((f) => preenchidas.has(f.id));
+  }, [funcoes, depto, minha, linhas, escalas]);
 
   // O ministerio escolhido no menu. Sem ele, a grade mostra tudo.
   const deptoAtual = departamentos.find((d) => d.id === depto);
@@ -215,7 +223,7 @@ function EscalaPage() {
               .filter((item) => item.vale || item.atribuicoes.length > 0)
               // Quem so acompanha nao precisa ver funcao vazia; quem escala precisa,
               // senao nao tem onde clicar para atribuir.
-              .filter((item) => podeEscalar || item.atribuicoes.length > 0);
+              .filter((item) => podeAtribuir || item.atribuicoes.length > 0);
 
             const ehHoje = culto.data === hoje();
 
@@ -277,12 +285,17 @@ function EscalaPage() {
                             {atribuicoes.map((e) => (
                               <span
                                 key={e.id}
-                                className="rounded-md bg-surface2 px-2.5 py-1 text-[13px] ring-1 ring-line"
+                                title={e.pessoa_id === pessoaId ? "Você" : undefined}
+                                className={`rounded-md px-2.5 py-1 text-[13px] ring-1 ${
+                                  e.pessoa_id === pessoaId
+                                    ? "bg-clay font-medium text-paper ring-clay"
+                                    : "bg-surface2 ring-line"
+                                }`}
                               >
                                 {pessoas.find((x) => x.id === e.pessoa_id)?.nome ?? "—"}
                               </span>
                             ))}
-                            {podeEscalar && vale ? (
+                            {podeAtribuir && vale ? (
                               <button
                                 onClick={() => setAlvo({ cultoId: culto.id, funcaoId: f.id })}
                                 className="rounded-md border border-dashed border-line px-2.5 py-1 text-[13px] text-muted transition-colors hover:border-clay/50 hover:text-clay"
@@ -424,12 +437,17 @@ function EscalaPage() {
                               {atribuicoes.map((e) => (
                                 <span
                                   key={e.id}
-                                  className="rounded-md bg-surface2 px-2.5 py-1 text-[12px] whitespace-nowrap ring-1 ring-line"
+                                  title={e.pessoa_id === pessoaId ? "Você" : undefined}
+                                  className={`rounded-md px-2.5 py-1 text-[12px] whitespace-nowrap ring-1 ${
+                                    e.pessoa_id === pessoaId
+                                      ? "bg-clay font-medium text-paper ring-clay"
+                                      : "bg-surface2 ring-line"
+                                  }`}
                                 >
                                   {pessoas.find((x) => x.id === e.pessoa_id)?.nome ?? "—"}
                                 </span>
                               ))}
-                              {podeEscalar ? (
+                              {podeAtribuir ? (
                                 <button
                                   onClick={() => setAlvo({ cultoId: culto.id, funcaoId: f.id })}
                                   className="rounded-md border border-dashed border-line px-2.5 py-1 text-[12px] whitespace-nowrap text-muted transition-colors hover:border-clay/50 hover:text-clay"
