@@ -69,6 +69,49 @@ export function hoje() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+// Nada foi cadastrado antes disto, entao nao ha o que ver para tras.
+export const MES_MINIMO = "2026-09";
+
+const MESES = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+/** Mes de hoje (AAAA-MM), nunca antes de MES_MINIMO. */
+export function mesAtual() {
+  const atual = hoje().slice(0, 7);
+  return atual < MES_MINIMO ? MES_MINIMO : atual;
+}
+
+/** "2026-10" → "Outubro 2026". */
+export function rotuloMes(mes: string) {
+  const [a, m] = mes.split("-").map(Number);
+  return `${MESES[m! - 1]} ${a}`;
+}
+
+/** "2026-10" + 3 → "2027-01". */
+export function somarMes(mes: string, delta: number) {
+  const [a, m] = mes.split("-").map(Number);
+  const d = new Date(a!, m! - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** "Áudio", "Áudio e Vídeo", "Áudio, Vídeo e Foto". */
+export function juntar(nomes: string[]) {
+  if (nomes.length <= 1) return nomes[0] ?? "";
+  return `${nomes.slice(0, -1).join(", ")} e ${nomes[nomes.length - 1]}`;
+}
+
 export type ModeloRecorrente = {
   titulo: string;
   horario: string;

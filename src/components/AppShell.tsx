@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 //               departamento; e esse vinculo que faz o nome aparecer no
 //               "Atribuir" da escala
 const NAV = [
+  { to: "/escala-do-mes", label: "Escala do mês", nivel: "escalar" },
   { to: "/cultos", label: "Próximos cultos", nivel: "escalar" },
   { to: "/voluntarios", label: "Voluntários", nivel: "admin" },
   { to: "/departamentos", label: "Departamentos", nivel: "admin" },

@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedCultosRouteImport } from './routes/_authenticated/cultos'
 import { Route as AuthenticatedDepartamentosRouteImport } from './routes/_authenticated/departamentos'
 import { Route as AuthenticatedEscalaRouteImport } from './routes/_authenticated/escala'
+import { Route as AuthenticatedEscalaDoMesRouteImport } from './routes/_authenticated/escala-do-mes'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedVoluntariosRouteImport } from './routes/_authenticated/voluntarios'
 
@@ -48,6 +49,12 @@ const AuthenticatedEscalaRoute = AuthenticatedEscalaRouteImport.update({
   path: '/escala',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEscalaDoMesRoute =
+  AuthenticatedEscalaDoMesRouteImport.update({
+    id: '/escala-do-mes',
+    path: '/escala-do-mes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
@@ -66,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/cultos': typeof AuthenticatedCultosRoute
   '/departamentos': typeof AuthenticatedDepartamentosRoute
   '/escala': typeof AuthenticatedEscalaRoute
+  '/escala-do-mes': typeof AuthenticatedEscalaDoMesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/voluntarios': typeof AuthenticatedVoluntariosRoute
 }
@@ -75,6 +83,7 @@ export interface FileRoutesByTo {
   '/cultos': typeof AuthenticatedCultosRoute
   '/departamentos': typeof AuthenticatedDepartamentosRoute
   '/escala': typeof AuthenticatedEscalaRoute
+  '/escala-do-mes': typeof AuthenticatedEscalaDoMesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/voluntarios': typeof AuthenticatedVoluntariosRoute
 }
@@ -86,6 +95,7 @@ export interface FileRoutesById {
   '/_authenticated/cultos': typeof AuthenticatedCultosRoute
   '/_authenticated/departamentos': typeof AuthenticatedDepartamentosRoute
   '/_authenticated/escala': typeof AuthenticatedEscalaRoute
+  '/_authenticated/escala-do-mes': typeof AuthenticatedEscalaDoMesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/voluntarios': typeof AuthenticatedVoluntariosRoute
 }
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/cultos'
     | '/departamentos'
     | '/escala'
+    | '/escala-do-mes'
     | '/usuarios'
     | '/voluntarios'
   fileRoutesByTo: FileRoutesByTo
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/cultos'
     | '/departamentos'
     | '/escala'
+    | '/escala-do-mes'
     | '/usuarios'
     | '/voluntarios'
   id:
@@ -116,6 +128,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cultos'
     | '/_authenticated/departamentos'
     | '/_authenticated/escala'
+    | '/_authenticated/escala-do-mes'
     | '/_authenticated/usuarios'
     | '/_authenticated/voluntarios'
   fileRoutesById: FileRoutesById
@@ -170,6 +183,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEscalaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/escala-do-mes': {
+      id: '/_authenticated/escala-do-mes'
+      path: '/escala-do-mes'
+      fullPath: '/escala-do-mes'
+      preLoaderRoute: typeof AuthenticatedEscalaDoMesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/usuarios': {
       id: '/_authenticated/usuarios'
       path: '/usuarios'
@@ -191,6 +211,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCultosRoute: typeof AuthenticatedCultosRoute
   AuthenticatedDepartamentosRoute: typeof AuthenticatedDepartamentosRoute
   AuthenticatedEscalaRoute: typeof AuthenticatedEscalaRoute
+  AuthenticatedEscalaDoMesRoute: typeof AuthenticatedEscalaDoMesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedVoluntariosRoute: typeof AuthenticatedVoluntariosRoute
 }
@@ -199,6 +220,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCultosRoute: AuthenticatedCultosRoute,
   AuthenticatedDepartamentosRoute: AuthenticatedDepartamentosRoute,
   AuthenticatedEscalaRoute: AuthenticatedEscalaRoute,
+  AuthenticatedEscalaDoMesRoute: AuthenticatedEscalaDoMesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedVoluntariosRoute: AuthenticatedVoluntariosRoute,
 }

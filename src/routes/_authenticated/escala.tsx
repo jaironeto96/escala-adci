@@ -1,8 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
-import { consultas, cor, dataCurta, hoje, hora, type Culto, type Funcao } from "@/lib/dados";
+import {
+  consultas,
+  cor,
+  dataCurta,
+  hoje,
+  hora,
+  mesAtual,
+  type Culto,
+  type Funcao,
+} from "@/lib/dados";
 import { funcaoAtivaNoCulto } from "@/lib/funcoes-do-culto";
 import { usePapel } from "@/hooks/usePapel";
 import { useMinhaPessoa } from "@/hooks/useMinhaPessoa";
@@ -10,6 +19,8 @@ import { useAjustarFuncao } from "@/hooks/useAjustarFuncao";
 import { AtribuirModal } from "@/components/AtribuirModal";
 import { AtivarNotificacoes } from "@/components/AtivarNotificacoes";
 import { FuncoesDoCultoModal } from "@/components/FuncoesDoCultoModal";
+import { MinhaEscala } from "@/components/MinhaEscala";
+import { SeletorDeMes } from "@/components/SeletorDeMes";
 
 type Busca = {
   depto?: string | undefined;
@@ -45,26 +56,13 @@ export const Route = createFileRoute("/_authenticated/escala")({
   component: EscalaPage,
 });
 
-// Nada foi cadastrado antes disto, entao nao ha o que ver para tras.
-const MES_MINIMO = "2026-09";
-
-const MESES = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
-
 function EscalaPage() {
   const { depto, minha, dia } = Route.useSearch();
+  // "Minha escala" e outra tela: a lista pessoal de quem esta logado, sem grade.
+  return minha ? <MinhaEscala dia={dia} /> : <GradeDaEscala depto={depto} />;
+}
+
+function GradeDaEscala({ depto }: { depto?: string | undefined }) {
   const { podeEscalar } = usePapel();
   const { pessoaId } = useMinhaPessoa();
 
@@ -77,61 +75,14 @@ function EscalaPage() {
 
   const [alvo, setAlvo] = useState<{ cultoId: string; funcaoId: string } | null>(null);
   const [painelDe, setPainelDe] = useState<Culto | null>(null);
-  const [mes, setMes] = useState(() => {
-    const atual = (dia ?? hoje()).slice(0, 7);
-    return atual < MES_MINIMO ? MES_MINIMO : atual;
-  });
+  const [mes, setMes] = useState(mesAtual);
 
-  // Vindo da notificacao, a tela abre no mes do culto, rola ate ele e o destaca.
-  // O app pode ja estar aberto quando a notificacao e tocada — por isso o mes
-  // tambem acompanha mudancas de "dia", e nao so o valor inicial.
-  const rolouPara = useRef<string | null>(null);
-  useEffect(() => {
-    if (dia && dia.slice(0, 7) >= MES_MINIMO) setMes(dia.slice(0, 7));
-  }, [dia]);
+  const linhas = useMemo(() => cultos.filter((c) => c.data.slice(0, 7) === mes), [cultos, mes]);
 
-  useEffect(() => {
-    if (!dia || rolouPara.current === dia) return;
-    const visivel = [...document.querySelectorAll<HTMLElement>(`[data-culto-dia="${dia}"]`)].find(
-      (el) => el.offsetParent !== null,
-    );
-    if (!visivel) return;
-    rolouPara.current = dia;
-    requestAnimationFrame(() => visivel.scrollIntoView({ behavior: "smooth", block: "center" }));
-  });
-
-  // Mexer nas funcoes de um culto e trabalho de quem escala — e nao faz sentido
-  // em "Minha escala", que e so a visao pessoal de quem esta logado.
-  const podeAjustar = podeEscalar && !minha;
-  // Pelo mesmo motivo, "Atribuir" so aparece na escala dos ministerios.
-  const podeAtribuir = podeEscalar && !minha;
-
-  const minhasEscalas = useMemo(
-    () => (pessoaId ? escalas.filter((e) => e.pessoa_id === pessoaId) : []),
-    [escalas, pessoaId],
+  const colunas = useMemo(
+    () => (depto ? funcoes.filter((f) => f.departamento_id === depto) : funcoes),
+    [funcoes, depto],
   );
-
-  // Em "Minha escala" a grade encolhe duas vezes: so os cultos em que a pessoa
-  // aparece, e dentro deles so as funcoes que ela exerce.
-  const linhas = useMemo(() => {
-    const doMes = cultos.filter((c) => c.data.slice(0, 7) === mes);
-    if (!minha) return doMes;
-    const meus = new Set(minhasEscalas.map((e) => e.culto_id));
-    return doMes.filter((c) => meus.has(c.id));
-  }, [cultos, mes, minha, minhasEscalas]);
-
-  const colunas = useMemo(() => {
-    const doDepto = depto ? funcoes.filter((f) => f.departamento_id === depto) : funcoes;
-    if (!minha) return doDepto;
-    // Em "Minha escala" a pessoa ve a equipe inteira de cada culto em que esta — com
-    // quem vai servir, e nao so a propria funcao. Ficam so as funcoes preenchidas,
-    // para a tela nao virar uma lista de vazios.
-    const cultosVisiveis = new Set(linhas.map((c) => c.id));
-    const preenchidas = new Set(
-      escalas.filter((e) => cultosVisiveis.has(e.culto_id)).map((e) => e.funcao_id),
-    );
-    return doDepto.filter((f) => preenchidas.has(f.id));
-  }, [funcoes, depto, minha, linhas, escalas]);
 
   // O ministerio escolhido no menu. Sem ele, a grade mostra tudo.
   const deptoAtual = departamentos.find((d) => d.id === depto);
@@ -149,19 +100,6 @@ function EscalaPage() {
   // Mesma regra de excluir em todo lugar: vem do hook, nao e reescrita aqui.
   const { excluir: excluirFuncao, adicionar: adicionarFuncao, ocupado } = useAjustarFuncao();
 
-  const mudarMes = (delta: number) => {
-    const [a, m] = mes.split("-").map(Number);
-    const d = new Date(a!, m! - 1 + delta, 1);
-    const alvo = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    if (alvo < MES_MINIMO) return;
-    setMes(alvo);
-  };
-
-  const rotuloMes = () => {
-    const [a, m] = mes.split("-").map(Number);
-    return `${MESES[m! - 1]} ${a}`;
-  };
-
   return (
     <>
       <section className="rise mb-8 flex flex-wrap items-end justify-between gap-8">
@@ -169,9 +107,7 @@ function EscalaPage() {
           <h1 className="text-balance font-display text-5xl font-light leading-[1.02] tracking-tight">
             Escala
           </h1>
-          {minha ? (
-            <p className="label-mono mt-3">Minha escala</p>
-          ) : deptoAtual ? (
+          {deptoAtual ? (
             <p className="label-mono mt-3 flex items-center gap-2">
               <span className={`size-2 rounded-full ${cor(deptoAtual.cor).dot}`} />
               {deptoAtual.nome}
@@ -180,24 +116,7 @@ function EscalaPage() {
             <p className="label-mono mt-3">Todos os ministérios</p>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 rounded-full border border-line px-1 py-0.5">
-            <button
-              onClick={() => mudarMes(-1)}
-              disabled={mes <= MES_MINIMO}
-              className="rounded-full px-2 py-0.5 font-mono text-[11px] text-muted hover:text-ink disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:text-muted"
-            >
-              ‹
-            </button>
-            <span className="px-1 font-mono text-[11px] text-ink">{rotuloMes()}</span>
-            <button
-              onClick={() => mudarMes(1)}
-              className="rounded-full px-2 py-0.5 font-mono text-[11px] text-muted hover:text-ink"
-            >
-              ›
-            </button>
-          </div>
-        </div>
+        <SeletorDeMes mes={mes} onChange={setMes} />
       </section>
 
       <AtivarNotificacoes />
@@ -208,7 +127,7 @@ function EscalaPage() {
       <section className="rise space-y-3 md:hidden" style={{ animationDelay: "120ms" }}>
         {linhas.length === 0 ? (
           <p className="rounded-xl border border-line bg-surface px-4 py-6 text-[13px] text-muted">
-            {minha ? "Você não está escalado neste mês." : "Nenhum culto neste mês."}
+            Nenhum culto neste mês.
           </p>
         ) : (
           linhas.map((culto) => {
@@ -223,17 +142,16 @@ function EscalaPage() {
               .filter((item) => item.vale || item.atribuicoes.length > 0)
               // Quem so acompanha nao precisa ver funcao vazia; quem escala precisa,
               // senao nao tem onde clicar para atribuir.
-              .filter((item) => podeAtribuir || item.atribuicoes.length > 0);
+              .filter((item) => podeEscalar || item.atribuicoes.length > 0);
 
             const ehHoje = culto.data === hoje();
 
             return (
               <article
                 key={culto.id}
-                data-culto-dia={culto.data}
                 className={`overflow-hidden rounded-xl border bg-surface ${
                   ehHoje ? "border-clay/40" : "border-line"
-                } ${culto.data === dia ? "ring-2 ring-clay/60" : ""}`}
+                }`}
               >
                 {/* Empilhado, nao lado a lado: em tela estreita um titulo longo
                     empurrava a data e o horario para a linha de baixo, quebrando
@@ -271,7 +189,7 @@ function EscalaPage() {
                                 </span>
                               )}
                             </span>
-                            {podeAjustar && vale ? (
+                            {podeEscalar && vale ? (
                               <button
                                 onClick={() => excluirFuncao(culto, f)}
                                 disabled={ocupado}
@@ -295,7 +213,7 @@ function EscalaPage() {
                                 {pessoas.find((x) => x.id === e.pessoa_id)?.nome ?? "—"}
                               </span>
                             ))}
-                            {podeAtribuir && vale ? (
+                            {podeEscalar && vale ? (
                               <button
                                 onClick={() => setAlvo({ cultoId: culto.id, funcaoId: f.id })}
                                 className="rounded-md border border-dashed border-line px-2.5 py-1 text-[13px] text-muted transition-colors hover:border-clay/50 hover:text-clay"
@@ -313,7 +231,7 @@ function EscalaPage() {
                 {/* Sempre visivel para quem ajusta, em qualquer ministerio. Antes so
                     aparecia quando havia algo a adicionar naquele ministerio — na
                     pagina da Base, onde tudo ja vale, o botao sumia. */}
-                {podeAjustar ? (
+                {podeEscalar ? (
                   <div className="border-t border-line px-4 py-3">
                     <button
                       onClick={() => setPainelDe(culto)}
@@ -360,22 +278,14 @@ function EscalaPage() {
               {linhas.length === 0 ? (
                 <tr>
                   <td className="px-4 py-6 text-muted" colSpan={colunas.length + 1}>
-                    {minha ? "Você não está escalado neste mês." : "Nenhum culto neste mês."}
+                    Nenhum culto neste mês.
                   </td>
                 </tr>
               ) : (
                 linhas.map((culto) => {
                   const ehHoje = culto.data === hoje();
                   return (
-                    <tr
-                      key={culto.id}
-                      data-culto-dia={culto.data}
-                      className={`transition-colors hover:bg-surface2 ${
-                        culto.data === dia
-                          ? "outline outline-2 -outline-offset-2 outline-clay/60"
-                          : ""
-                      }`}
-                    >
+                    <tr key={culto.id} className="transition-colors hover:bg-surface2">
                       <td
                         className={`sticky left-0 z-10 bg-surface px-4 py-3 whitespace-nowrap ${ehHoje ? "text-clay" : ""}`}
                       >
@@ -383,7 +293,7 @@ function EscalaPage() {
                         <div className="font-mono text-[11px] text-muted">
                           {culto.titulo} · {hora(culto.horario)}
                         </div>
-                        {podeAjustar ? (
+                        {podeEscalar ? (
                           <button
                             onClick={() => setPainelDe(culto)}
                             className="mt-1.5 font-mono text-[11px] text-muted underline-offset-2 transition-colors hover:text-clay hover:underline"
@@ -412,7 +322,7 @@ function EscalaPage() {
                                     {pessoas.find((x) => x.id === e.pessoa_id)?.nome ?? "—"}
                                   </span>
                                 ))}
-                                {podeAjustar ? (
+                                {podeEscalar ? (
                                   <button
                                     onClick={() => adicionarFuncao(culto, f)}
                                     disabled={ocupado}
@@ -447,7 +357,7 @@ function EscalaPage() {
                                   {pessoas.find((x) => x.id === e.pessoa_id)?.nome ?? "—"}
                                 </span>
                               ))}
-                              {podeAtribuir ? (
+                              {podeEscalar ? (
                                 <button
                                   onClick={() => setAlvo({ cultoId: culto.id, funcaoId: f.id })}
                                   className="rounded-md border border-dashed border-line px-2.5 py-1 text-[12px] whitespace-nowrap text-muted transition-colors hover:border-clay/50 hover:text-clay"
@@ -457,7 +367,7 @@ function EscalaPage() {
                               ) : atribuicoes.length === 0 ? (
                                 <span className="font-mono text-[11px] text-muted">—</span>
                               ) : null}
-                              {podeAjustar ? (
+                              {podeEscalar ? (
                                 <button
                                   onClick={() => excluirFuncao(culto, f)}
                                   disabled={ocupado}

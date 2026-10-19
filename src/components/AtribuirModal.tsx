@@ -3,13 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
-import { consultas, cor, dataCurta, hoje, type Funcao } from "@/lib/dados";
-
-// "Áudio", "Áudio e Vídeo", "Áudio, Vídeo e Foto".
-function juntar(nomes: string[]) {
-  if (nomes.length <= 1) return nomes[0] ?? "";
-  return `${nomes.slice(0, -1).join(", ")} e ${nomes[nomes.length - 1]}`;
-}
+import { consultas, cor, dataCurta, hoje, juntar, type Funcao } from "@/lib/dados";
 
 type Props = {
   cultoId: string;
