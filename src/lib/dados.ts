@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { ordenarFuncoes } from "@/lib/funcoes-do-culto";
 
 export type Departamento = { id: string; nome: string; cor: string };
 export type Funcao = { id: string; nome: string; departamento_id: string };
@@ -182,7 +183,9 @@ export const consultas = {
   funcoes: () => ({
     queryKey: ["funcoes"],
     queryFn: () =>
-      pegar<Funcao[]>(supabase.from("funcoes").select("id, nome, departamento_id").order("nome")),
+      pegar<Funcao[]>(
+        supabase.from("funcoes").select("id, nome, departamento_id").order("nome"),
+      ).then(ordenarFuncoes),
   }),
   pessoas: () => ({
     queryKey: ["pessoas"],

@@ -45,6 +45,7 @@ function EscalaDoMesPage() {
   const { data: ajustes = [] } = useQuery(consultas.ajustesFuncao());
 
   const [mes, setMes] = useState(mesAtual);
+  const [deptoId, setDeptoId] = useState("");
   const [pessoaId, setPessoaId] = useState("");
   const [exportando, setExportando] = useState(false);
 
@@ -57,12 +58,19 @@ function EscalaDoMesPage() {
     () => ({ mes, cultos, escalas, funcoes, departamentos, pessoas, ajustes }),
     [mes, cultos, escalas, funcoes, departamentos, pessoas, ajustes],
   );
-  const tabelas = useMemo(() => tabelasDoMes(dados), [dados]);
-  const escaladas = useMemo(() => pessoasDoMes(dados), [dados]);
+  const depto = departamentos.find((d) => d.id === deptoId);
   const pessoa = pessoas.find((p) => p.id === pessoaId);
+
+  // O ministerio escolhido vale para tudo: para a tabela, para a lista de
+  // voluntarios e para a escala de uma pessoa — e o PDF sai igual a tela.
+  const tabelas = useMemo(
+    () => tabelasDoMes(dados).filter((t) => !deptoId || t.depto.id === deptoId),
+    [dados, deptoId],
+  );
+  const escaladas = useMemo(() => pessoasDoMes(dados, deptoId || undefined), [dados, deptoId]);
   const daPessoa = useMemo(
-    () => (pessoaId ? escalaDaPessoa(dados, pessoaId) : []),
-    [dados, pessoaId],
+    () => (pessoaId ? escalaDaPessoa(dados, pessoaId, deptoId || undefined) : []),
+    [dados, pessoaId, deptoId],
   );
 
   // O filtro lista quem serve no mes. A pessoa escolhida continua na lista mesmo
@@ -74,11 +82,13 @@ function EscalaDoMesPage() {
 
   const carregando = carregandoCultos || carregandoEscalas;
   const vazio = pessoa ? daPessoa.length === 0 : tabelas.length === 0;
+  // "Midia · Outubro 2026" ou "Ana Souza · Outubro 2026 (Midia)" nos avisos.
+  const noMes = `${rotuloMes(mes)}${depto ? ` (${depto.nome})` : ""}`;
 
   async function exportar() {
     setExportando(true);
     try {
-      if (pessoa) await pdfDaPessoa(mes, pessoa.nome, daPessoa);
+      if (pessoa) await pdfDaPessoa(mes, pessoa.nome, daPessoa, depto);
       else await pdfDoMes(mes, tabelas);
     } catch {
       toast.error("Não foi possível gerar o PDF.", {
@@ -96,7 +106,10 @@ function EscalaDoMesPage() {
           <h1 className="text-balance font-display text-5xl font-light leading-[1.02] tracking-tight">
             Escala do mês
           </h1>
-          <p className="label-mono mt-3">{pessoa ? pessoa.nome : "Todos os ministérios"}</p>
+          <p className="label-mono mt-3 flex items-center gap-2">
+            {depto ? <span className={`size-2 rounded-full ${cor(depto.cor).dot}`} /> : null}
+            {[depto?.nome ?? "Todos os ministérios", pessoa?.nome].filter(Boolean).join(" · ")}
+          </p>
         </div>
         <SeletorDeMes mes={mes} onChange={setMes} />
       </section>
@@ -105,6 +118,21 @@ function EscalaDoMesPage() {
         className="rise mb-6 flex flex-wrap items-end gap-3 text-[13px]"
         style={{ animationDelay: "60ms" }}
       >
+        <label className="min-w-[160px] flex-1 sm:flex-none">
+          <span className="label-mono">Ministério</span>
+          <select
+            value={deptoId}
+            onChange={(e) => setDeptoId(e.target.value)}
+            className="mt-1.5 block w-full rounded-md border border-line bg-surface2 px-3 py-2 text-ink outline-none focus:border-clay/50 sm:w-48"
+          >
+            <option value="">Todos os ministérios</option>
+            {departamentos.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.nome}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="min-w-[200px] flex-1 sm:flex-none">
           <span className="label-mono">Voluntário</span>
           <select
@@ -135,7 +163,7 @@ function EscalaDoMesPage() {
         <section className="rise" style={{ animationDelay: "120ms" }}>
           {daPessoa.length === 0 ? (
             <p className={AVISO}>
-              {pessoa.nome} não está escalado(a) em {rotuloMes(mes)}.
+              {pessoa.nome} não está escalado(a) em {noMes}.
             </p>
           ) : (
             <>
@@ -174,13 +202,13 @@ function EscalaDoMesPage() {
                 </table>
               </div>
               <p className="mt-3 font-mono text-[11px] text-muted">
-                {daPessoa.length} {daPessoa.length === 1 ? "culto" : "cultos"} em {rotuloMes(mes)}
+                {daPessoa.length} {daPessoa.length === 1 ? "culto" : "cultos"} em {noMes}
               </p>
             </>
           )}
         </section>
       ) : tabelas.length === 0 ? (
-        <p className={AVISO}>Ninguém escalado em {rotuloMes(mes)} ainda.</p>
+        <p className={AVISO}>Ninguém escalado em {noMes} ainda.</p>
       ) : (
         <div className="rise space-y-8" style={{ animationDelay: "120ms" }}>
           {tabelas.map((t) => (
@@ -196,7 +224,7 @@ function EscalaDoMesPage() {
                       <tr className="text-left">
                         <th className={`${TH} sticky left-0 z-10`}>Culto</th>
                         {t.funcoes.map((f) => (
-                          <th key={f.id} className={TH}>
+                          <th key={f.id} className={`${TH} text-center`}>
                             {f.nome}
                           </th>
                         ))}
@@ -222,13 +250,13 @@ function EscalaDoMesPage() {
                             {celulas.map((celula, i) => (
                               <td
                                 key={t.funcoes[i]!.id}
-                                className={`px-3 py-2.5 align-top ${
+                                className={`px-3 py-2.5 text-center align-middle ${
                                   !celula.vale && celula.nomes.length === 0 ? "bg-surface2/50" : ""
                                 } ${ehHoje ? "bg-clay/5" : ""}`}
                               >
                                 {celula.nomes.length > 0 ? (
                                   <div
-                                    className={`flex flex-col gap-0.5 ${
+                                    className={`flex flex-col items-center gap-0.5 ${
                                       celula.vale ? "" : "text-amber"
                                     }`}
                                   >

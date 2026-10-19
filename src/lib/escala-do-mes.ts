@@ -30,10 +30,17 @@ export type DadosDaEscala = {
 
 const porNome = (a: string, b: string) => a.localeCompare(b, "pt-BR");
 
-function doMes(d: DadosDaEscala) {
+// Cultos e escalas do mes. Com `deptoId`, so as escalas em funcoes daquele ministerio.
+function doMes(d: DadosDaEscala, deptoId?: string) {
   const cultos = d.cultos.filter((c) => c.data.slice(0, 7) === d.mes);
   const ids = new Set(cultos.map((c) => c.id));
-  return { cultos, escalas: d.escalas.filter((e) => ids.has(e.culto_id)) };
+  const doDepto = deptoId
+    ? new Set(d.funcoes.filter((f) => f.departamento_id === deptoId).map((f) => f.id))
+    : null;
+  return {
+    cultos,
+    escalas: d.escalas.filter((e) => ids.has(e.culto_id) && (!doDepto || doDepto.has(e.funcao_id))),
+  };
 }
 
 /** Uma tabela por ministerio: cultos nas linhas, funcoes nas colunas. */
@@ -63,28 +70,29 @@ export function tabelasDoMes(d: DadosDaEscala): TabelaMinisterio[] {
     .filter((t) => t.funcoes.length > 0);
 }
 
-/** Quem tem pelo menos uma escala no mes, na ordem do cadastro (por nome). */
-export function pessoasDoMes(d: DadosDaEscala): Pessoa[] {
-  const { escalas } = doMes(d);
+/** Quem tem pelo menos uma escala no mes (no ministerio, se houver), por nome. */
+export function pessoasDoMes(d: DadosDaEscala, deptoId?: string): Pessoa[] {
+  const { escalas } = doMes(d, deptoId);
   const escaladas = new Set(escalas.map((e) => e.pessoa_id));
   return d.pessoas.filter((p) => escaladas.has(p.id));
 }
 
 /** Os cultos do mes em que a pessoa serve, com a(s) funcao(oes) de cada um. */
-export function escalaDaPessoa(d: DadosDaEscala, pessoaId: string): LinhaDaPessoa[] {
-  const { cultos, escalas } = doMes(d);
-  const minhas = escalas.filter((e) => e.pessoa_id === pessoaId);
+export function escalaDaPessoa(
+  d: DadosDaEscala,
+  pessoaId: string,
+  deptoId?: string,
+): LinhaDaPessoa[] {
+  const { cultos, escalas } = doMes(d, deptoId);
+  const minhas = new Set(
+    escalas.filter((e) => e.pessoa_id === pessoaId).map((e) => `${e.culto_id}|${e.funcao_id}`),
+  );
+  // Percorre as funcoes, e nao as escalas: assim "Audio e Som" sai na mesma ordem
+  // das colunas da tabela.
   return cultos
     .map((culto) => ({
       culto,
-      funcoes: [
-        ...new Set(
-          minhas
-            .filter((e) => e.culto_id === culto.id)
-            .map((e) => d.funcoes.find((f) => f.id === e.funcao_id)?.nome)
-            .filter((n): n is string => !!n),
-        ),
-      ].sort(porNome),
+      funcoes: d.funcoes.filter((f) => minhas.has(`${culto.id}|${f.id}`)).map((f) => f.nome),
     }))
     .filter((l) => l.funcoes.length > 0);
 }

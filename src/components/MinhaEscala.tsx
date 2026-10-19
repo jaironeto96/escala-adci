@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronRight } from "lucide-react";
 
 import {
   consultas,
@@ -10,6 +11,7 @@ import {
   juntar,
   rotuloMes,
   type Culto,
+  type Departamento,
   type Escala,
   type Funcao,
 } from "@/lib/dados";
@@ -17,7 +19,7 @@ import { usePapel } from "@/hooks/usePapel";
 import { useMinhaPessoa } from "@/hooks/useMinhaPessoa";
 import { AtivarNotificacoes } from "@/components/AtivarNotificacoes";
 
-// Visao pessoal de quem esta logado: os cultos em que a pessoa serve, cada um com
+// Visao pessoal de quem esta logado: os cultos em que a pessoa serve, e, num toque,
 // quem vai servir junto. Nao e grade de funcoes nem tem botao de escalar — e so
 // consulta, igual para todos os papeis. Por isso o mesmo cartao serve no celular
 // e no computador.
@@ -40,15 +42,13 @@ export function MinhaEscala({ dia }: { dia?: string | undefined }) {
     if (dia) setAnteriores(false);
   }, [dia]);
 
-  // A equipe sai agrupada por ministerio e, dentro dele, por funcao — a mesma
-  // ordem em todo cartao.
+  // A equipe sai agrupada por ministerio e, dentro dele, na ordem das funcoes do
+  // app (Video, Audio, Som...) — a mesma em todo cartao. O sort e estavel: so
+  // agrupa por ministerio, sem desfazer a ordem que ja vem da consulta.
   const ordemDe = useMemo(() => {
     const deptoDe = (f: Funcao) =>
       departamentos.find((d) => d.id === f.departamento_id)?.nome ?? "";
-    const ordenadas = [...funcoes].sort(
-      (a, b) =>
-        deptoDe(a).localeCompare(deptoDe(b), "pt-BR") || a.nome.localeCompare(b.nome, "pt-BR"),
-    );
+    const ordenadas = [...funcoes].sort((a, b) => deptoDe(a).localeCompare(deptoDe(b), "pt-BR"));
     return new Map(ordenadas.map((f, i) => [f.id, i]));
   }, [funcoes, departamentos]);
 
@@ -139,7 +139,8 @@ export function MinhaEscala({ dia }: { dia?: string | undefined }) {
           porMes.map((grupo) => (
             <section key={grupo.mes}>
               <h2 className="label-mono mb-3">{rotuloMes(grupo.mes)}</h2>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {/* items-start: abrir a equipe de um cartao nao estica o vizinho. */}
+              <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {grupo.cultos.map((culto) => {
                   const doCulto = escalas.filter((e) => e.culto_id === culto.id);
 
@@ -162,72 +163,15 @@ export function MinhaEscala({ dia }: { dia?: string | undefined }) {
                     else equipe.push({ funcao: f, nomes: [nome(e.pessoa_id)] });
                   }
 
-                  const ehHoje = culto.data === hoje();
-
                   return (
-                    <article
+                    <CartaoDoCulto
                       key={culto.id}
-                      data-culto-dia={culto.data}
-                      className={`overflow-hidden rounded-xl border bg-surface ${
-                        ehHoje ? "border-clay/40" : "border-line"
-                      } ${culto.data === dia ? "ring-2 ring-clay/60" : ""}`}
-                    >
-                      <header
-                        className={`flex flex-col gap-0.5 border-b border-line px-4 py-3 ${
-                          ehHoje ? "bg-clay/5" : ""
-                        }`}
-                      >
-                        <span className={`font-medium ${ehHoje ? "text-clay" : ""}`}>
-                          {dataCurta(culto.data)}
-                          {ehHoje ? (
-                            <span className="ml-2 font-mono text-[11px] font-normal">hoje</span>
-                          ) : null}
-                        </span>
-                        <span className="font-mono text-[11px] text-muted">
-                          {culto.titulo} · {hora(culto.horario)}
-                        </span>
-                      </header>
-
-                      <p className="border-b border-line bg-clay/10 px-4 py-3 text-[14px] leading-snug">
-                        Você está escalado(a) para:{" "}
-                        <strong className="font-medium text-clay">{juntar(minhasFuncoes)}</strong>
-                      </p>
-
-                      {equipe.length === 0 ? (
-                        <p className="px-4 py-3 font-mono text-[11px] text-muted">
-                          Ninguém mais escalado neste culto ainda.
-                        </p>
-                      ) : (
-                        <>
-                          <p className="px-4 pt-3 text-[12px] text-muted">Com você neste culto</p>
-                          <div className="divide-y divide-line">
-                            {equipe.map(({ funcao: f, nomes }) => {
-                              const c = cor(
-                                departamentos.find((d) => d.id === f.departamento_id)?.cor,
-                              );
-                              return (
-                                <div key={f.id} className="flex flex-col gap-2 px-4 py-3">
-                                  <span className="label-mono flex items-center gap-2">
-                                    <span className={`size-2 rounded-full ${c.dot}`} />
-                                    {f.nome}
-                                  </span>
-                                  <div className="flex flex-wrap items-center gap-1.5">
-                                    {nomes.map((n, i) => (
-                                      <span
-                                        key={`${n}-${i}`}
-                                        className="rounded-md bg-surface2 px-2.5 py-1 text-[13px] ring-1 ring-line"
-                                      >
-                                        {n}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </>
-                      )}
-                    </article>
+                      culto={culto}
+                      destacado={culto.data === dia}
+                      minhasFuncoes={minhasFuncoes}
+                      equipe={equipe}
+                      departamentos={departamentos}
+                    />
                   );
                 })}
               </div>
@@ -236,5 +180,97 @@ export function MinhaEscala({ dia }: { dia?: string | undefined }) {
         )}
       </div>
     </>
+  );
+}
+
+type Props = {
+  culto: Culto;
+  /** Culto que veio do toque na notificacao. */
+  destacado: boolean;
+  minhasFuncoes: string[];
+  equipe: { funcao: Funcao; nomes: string[] }[];
+  departamentos: Departamento[];
+};
+
+// Um culto da pessoa. Fechado, mostra so a propria escala; o "›" de "Com voce neste
+// culto" abre a equipe. Cada cartao abre e fecha sozinho.
+function CartaoDoCulto({ culto, destacado, minhasFuncoes, equipe, departamentos }: Props) {
+  const [aberto, setAberto] = useState(false);
+  const ehHoje = culto.data === hoje();
+  const pessoasNaEquipe = new Set(equipe.flatMap((e) => e.nomes)).size;
+
+  return (
+    <article
+      data-culto-dia={culto.data}
+      className={`overflow-hidden rounded-xl border bg-surface ${
+        ehHoje ? "border-clay/40" : "border-line"
+      } ${destacado ? "ring-2 ring-clay/60" : ""}`}
+    >
+      <header
+        className={`flex flex-col gap-0.5 border-b border-line px-4 py-3 ${ehHoje ? "bg-clay/5" : ""}`}
+      >
+        <span className={`font-medium ${ehHoje ? "text-clay" : ""}`}>
+          {dataCurta(culto.data)}
+          {ehHoje ? <span className="ml-2 font-mono text-[11px] font-normal">hoje</span> : null}
+        </span>
+        <span className="font-mono text-[11px] text-muted">
+          {culto.titulo} · {hora(culto.horario)}
+        </span>
+      </header>
+
+      <p className="border-b border-line bg-clay/10 px-4 py-3 text-[14px] leading-snug">
+        Você está escalado(a) para:{" "}
+        <strong className="font-medium text-clay">{juntar(minhasFuncoes)}</strong>
+      </p>
+
+      {equipe.length === 0 ? (
+        <p className="px-4 py-3 font-mono text-[11px] text-muted">
+          Ninguém mais escalado neste culto ainda.
+        </p>
+      ) : (
+        <>
+          <button
+            onClick={() => setAberto((v) => !v)}
+            aria-expanded={aberto}
+            aria-controls={`equipe-${culto.id}`}
+            className="flex w-full items-center gap-2 px-4 py-3 text-left text-[13px] text-muted transition-colors hover:text-ink"
+          >
+            <ChevronRight
+              aria-hidden="true"
+              className={`size-4 shrink-0 transition-transform ${aberto ? "rotate-90" : ""}`}
+            />
+            Com você neste culto
+            <span className="ml-auto font-mono text-[11px]">
+              {pessoasNaEquipe} {pessoasNaEquipe === 1 ? "pessoa" : "pessoas"}
+            </span>
+          </button>
+          {aberto ? (
+            <div id={`equipe-${culto.id}`} className="divide-y divide-line border-t border-line">
+              {equipe.map(({ funcao: f, nomes }) => {
+                const c = cor(departamentos.find((d) => d.id === f.departamento_id)?.cor);
+                return (
+                  <div key={f.id} className="flex flex-col gap-2 px-4 py-3">
+                    <span className="label-mono flex items-center gap-2">
+                      <span className={`size-2 rounded-full ${c.dot}`} />
+                      {f.nome}
+                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {nomes.map((n, i) => (
+                        <span
+                          key={`${n}-${i}`}
+                          className="rounded-md bg-surface2 px-2.5 py-1 text-[13px] ring-1 ring-line"
+                        >
+                          {n}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+        </>
+      )}
+    </article>
   );
 }

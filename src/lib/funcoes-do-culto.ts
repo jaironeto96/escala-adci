@@ -12,6 +12,33 @@ export function chave(texto: string) {
     .replace(/[^a-z0-9]/g, "");
 }
 
+// Ordem das funcoes em todo o app — colunas da escala, Escala do mes, PDF, Minha
+// escala. Nao e alfabetica: as que existem em todo culto vem primeiro, e as que so
+// aparecem em alguns cultos ficam no fim, para a tabela nao abrir com colunas
+// vazias. Funcao fora da lista (Louvor, Base, alguma nova) vem depois, por nome.
+const ORDEM = [
+  "video",
+  "audio",
+  "som",
+  "auxsom",
+  "data",
+  "foto",
+  "story",
+  "comunicador",
+  "reels",
+  "adci1min",
+];
+
+export function ordenarFuncoes<T extends { nome: string }>(funcoes: T[]): T[] {
+  const posicao = (f: T) => {
+    const i = ORDEM.indexOf(chave(f.nome));
+    return i === -1 ? ORDEM.length : i;
+  };
+  return [...funcoes].sort(
+    (a, b) => posicao(a) - posicao(b) || a.nome.localeCompare(b.nome, "pt-BR"),
+  );
+}
+
 // Funcoes que so existem num dia da semana, qualquer que seja o ministerio.
 // 0 = domingo, 1 = segunda ... 4 = quinta ... 6 = sabado.
 const SO_NO_DIA: Record<string, number> = {
