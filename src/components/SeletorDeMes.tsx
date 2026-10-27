@@ -3,20 +3,22 @@ import { MES_MINIMO, rotuloMes, somarMes } from "@/lib/dados";
 type Props = {
   mes: string;
   onChange: (mes: string) => void;
+  /** Primeiro mes que da para abrir. Sem ele, MES_MINIMO. */
+  minimo?: string;
 };
 
 // "‹ Outubro 2026 ›". Nao volta antes de MES_MINIMO: nao ha nada cadastrado la.
-export function SeletorDeMes({ mes, onChange }: Props) {
+export function SeletorDeMes({ mes, onChange, minimo = MES_MINIMO }: Props) {
   const mudar = (delta: number) => {
     const alvo = somarMes(mes, delta);
-    if (alvo >= MES_MINIMO) onChange(alvo);
+    if (alvo >= minimo) onChange(alvo);
   };
 
   return (
     <div className="flex items-center gap-1 rounded-full border border-line px-1 py-0.5">
       <button
         onClick={() => mudar(-1)}
-        disabled={mes <= MES_MINIMO}
+        disabled={mes <= minimo}
         aria-label="Mês anterior"
         className="rounded-full px-2 py-0.5 font-mono text-[11px] text-muted hover:text-ink disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:text-muted"
       >

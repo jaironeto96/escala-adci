@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   consultas,
@@ -8,6 +8,7 @@ import {
   dataCurta,
   hoje,
   hora,
+  MES_MINIMO,
   mesAtual,
   type Culto,
   type Funcao,
@@ -18,6 +19,7 @@ import { useMinhaPessoa } from "@/hooks/useMinhaPessoa";
 import { useAjustarFuncao } from "@/hooks/useAjustarFuncao";
 import { AtribuirModal } from "@/components/AtribuirModal";
 import { AtivarNotificacoes } from "@/components/AtivarNotificacoes";
+import { BotaoAnteriores } from "@/components/BotaoAnteriores";
 import { FuncoesDoCultoModal } from "@/components/FuncoesDoCultoModal";
 import { MinhaEscala } from "@/components/MinhaEscala";
 import { SeletorDeMes } from "@/components/SeletorDeMes";
@@ -77,7 +79,36 @@ function GradeDaEscala({ depto }: { depto?: string | undefined }) {
   const [painelDe, setPainelDe] = useState<Culto | null>(null);
   const [mes, setMes] = useState(mesAtual);
 
-  const linhas = useMemo(() => cultos.filter((c) => c.data.slice(0, 7) === mes), [cultos, mes]);
+  // Igual a Minha escala: a grade mostra do culto de hoje em diante, e so quem
+  // escala pode olhar para tras — ai o mes volta a aparecer inteiro e da para
+  // voltar aos meses anteriores.
+  const [anteriores, setAnteriores] = useState(false);
+  const verAnteriores = podeEscalar && anteriores;
+
+  const mudarAnteriores = (ativo: boolean) => {
+    setAnteriores(ativo);
+    // Saindo dos anteriores, volta para um mes que ainda tem culto pela frente.
+    if (!ativo) setMes((m) => (m < mesAtual() ? mesAtual() : m));
+  };
+
+  // Nos ultimos dias do mes, quando ja nao ha culto pela frente, a tela abre
+  // direto no mes do proximo culto — e nao num mes vazio.
+  const pulouMes = useRef(false);
+  useEffect(() => {
+    if (pulouMes.current || cultos.length === 0) return;
+    pulouMes.current = true;
+    const proximo = cultos.find((c) => c.data >= hoje())?.data.slice(0, 7);
+    if (proximo) setMes((m) => (proximo > m ? proximo : m));
+  }, [cultos]);
+
+  const linhas = useMemo(
+    () =>
+      cultos.filter(
+        // O culto de hoje fica na tela o dia inteiro, mesmo depois de acabar.
+        (c) => c.data.slice(0, 7) === mes && (verAnteriores || c.data >= hoje()),
+      ),
+    [cultos, mes, verAnteriores],
+  );
 
   const colunas = useMemo(
     () => (depto ? funcoes.filter((f) => f.departamento_id === depto) : funcoes),
@@ -116,7 +147,14 @@ function GradeDaEscala({ depto }: { depto?: string | undefined }) {
             <p className="label-mono mt-3">Todos os ministérios</p>
           )}
         </div>
-        <SeletorDeMes mes={mes} onChange={setMes} />
+        <div className="flex flex-wrap items-center gap-2">
+          {podeEscalar ? <BotaoAnteriores ativo={anteriores} onChange={mudarAnteriores} /> : null}
+          <SeletorDeMes
+            mes={mes}
+            onChange={setMes}
+            minimo={verAnteriores ? MES_MINIMO : mesAtual()}
+          />
+        </div>
       </section>
 
       <AtivarNotificacoes />
@@ -127,7 +165,9 @@ function GradeDaEscala({ depto }: { depto?: string | undefined }) {
       <section className="rise space-y-3 md:hidden" style={{ animationDelay: "120ms" }}>
         {linhas.length === 0 ? (
           <p className="rounded-xl border border-line bg-surface px-4 py-6 text-[13px] text-muted">
-            Nenhum culto neste mês.
+            {verAnteriores
+              ? "Nenhum culto neste mês."
+              : "Nenhum culto daqui para frente neste mês."}
           </p>
         ) : (
           linhas.map((culto) => {
@@ -278,7 +318,9 @@ function GradeDaEscala({ depto }: { depto?: string | undefined }) {
               {linhas.length === 0 ? (
                 <tr>
                   <td className="px-4 py-6 text-muted" colSpan={colunas.length + 1}>
-                    Nenhum culto neste mês.
+                    {verAnteriores
+                      ? "Nenhum culto neste mês."
+                      : "Nenhum culto daqui para frente neste mês."}
                   </td>
                 </tr>
               ) : (

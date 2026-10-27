@@ -18,6 +18,7 @@ import {
 import { usePapel } from "@/hooks/usePapel";
 import { useMinhaPessoa } from "@/hooks/useMinhaPessoa";
 import { AtivarNotificacoes } from "@/components/AtivarNotificacoes";
+import { BotaoAnteriores } from "@/components/BotaoAnteriores";
 
 // Visao pessoal de quem esta logado: os cultos em que a pessoa serve, e, num toque,
 // quem vai servir junto. Nao e grade de funcoes nem tem botao de escalar — e so
@@ -106,15 +107,7 @@ export function MinhaEscala({ dia }: { dia?: string | undefined }) {
             {verAnteriores ? "Minha escala · cultos anteriores" : "Minha escala"}
           </p>
         </div>
-        {podeEscalar ? (
-          <button
-            onClick={() => setAnteriores((v) => !v)}
-            aria-pressed={anteriores}
-            className="rounded-full border border-line px-3 py-1 font-mono text-[11px] text-muted transition-colors hover:text-ink aria-pressed:bg-surface2 aria-pressed:text-ink"
-          >
-            {anteriores ? "Voltar aos próximos" : "Cultos anteriores"}
-          </button>
-        ) : null}
+        {podeEscalar ? <BotaoAnteriores ativo={anteriores} onChange={setAnteriores} /> : null}
       </section>
 
       <AtivarNotificacoes />
