@@ -5,11 +5,14 @@
 -- e a noite, e as 8h o aviso nao chega cedo demais.
 --
 -- Serve tanto para quem ja rodou o agendamento das 7h quanto para quem nunca
--- rodou: liga as extensoes se faltarem, guarda o segredo so se ele ainda nao
--- existir e troca o agendamento antigo pelos dois novos. Rodar de novo nao estraga
+-- rodou: liga as extensoes se faltarem, grava o segredo (trocando o antigo, se
+-- houver) e troca o agendamento antigo pelos dois novos. Rodar de novo nao estraga
 -- nada.
 --
--- Antes de rodar, troque COLE_AQUI_O_CRON_SECRET pelo CRON_SECRET da Vercel.
+-- Antes de rodar, troque COLE_AQUI_O_CRON_SECRET pelo CRON_SECRET da Vercel. Ele
+-- esta marcado como "Sensitive" la, e a Vercel nao mostra mais o valor: se
+-- ninguem tiver anotado, crie uma senha nova, grave-a no CRON_SECRET da Vercel,
+-- publique de novo (Redeploy) e use a mesma aqui.
 --
 -- O pg_cron do Supabase conta as horas em UTC: 10h UTC = 7h em Brasilia, 11h UTC
 -- = 8h. No dia da semana, 0 e domingo e 1-6 e de segunda a sabado.
@@ -24,9 +27,19 @@ create extension if not exists pg_net with schema extensions;
 grant usage on schema cron to postgres;
 grant all privileges on all tables in schema cron to postgres;
 
--- 2) O segredo da rota, no cofre do Supabase (Vault) — so se ainda nao existir.
-select vault.create_secret('COLE_AQUI_O_CRON_SECRET', 'cron_secret')
-where not exists (select 1 from vault.secrets where name = 'cron_secret');
+-- 2) O segredo da rota, no cofre do Supabase (Vault). Se ja existir, e trocado —
+--    a senha so aparece uma vez, aqui.
+do $$
+declare
+  senha text := 'COLE_AQUI_O_CRON_SECRET';
+begin
+  if exists (select 1 from vault.secrets where name = 'cron_secret') then
+    perform vault.update_secret((select id from vault.secrets where name = 'cron_secret'), senha);
+  else
+    perform vault.create_secret(senha, 'cron_secret');
+  end if;
+end
+$$;
 
 -- 3) Tira o agendamento antigo, das 7h todo dia, se existir.
 select cron.unschedule('aviso-escala-7h')
